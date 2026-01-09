@@ -1,8 +1,13 @@
+import { authService } from "@/src/api";
+import type { RegisterData } from "@/src/types";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Lock, Mail, User } from "lucide-react-native";
+import * as SecureStore from "expo-secure-store";
+import { Eye, EyeOff, Lock, Mail, Phone, User } from "lucide-react-native";
 import { useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   Image,
   Pressable,
   StyleSheet,
@@ -13,13 +18,80 @@ import {
 
 export default function SignupScreen() {
   const router = useRouter();
-  const [username, setUsername] = useState("");
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [phone, setPhone] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleContinue = () => {
-    console.log("Continue pressed", { username, email, password });
-    // API integration will be added later
+  const handleContinue = async () => {
+    if (!fullName || !email || !password || !confirmPassword || !phone) {
+      Alert.alert("Error", "Please fill in all required fields");
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      Alert.alert("Error", "Please enter a valid email address");
+      return;
+    }
+
+    // Password validation
+    if (password !== confirmPassword) {
+      Alert.alert("Error", "Passwords do not match");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const registerData: RegisterData = {
+        fullName: fullName,
+        phone: phone,
+        email,
+        password,
+      };
+
+      const response = await authService.register(registerData);
+
+      // Store tokens securely - response has nested structure { data: { customer, tokens } }
+      await SecureStore.setItemAsync(
+        "accessToken",
+        response.data.tokens.access.token
+      );
+      await SecureStore.setItemAsync(
+        "refreshToken",
+        response.data.tokens.refresh.token
+      );
+
+      // Store customer data
+      await SecureStore.setItemAsync(
+        "userData",
+        JSON.stringify(response.data.customer)
+      );
+
+      Alert.alert("Success", "Account created successfully!");
+      router.replace("/home");
+    } catch (error: any) {
+      console.error("Signup error:", error);
+
+      // Handle validation errors
+      if (error.response?.data?.errors) {
+        const validationErrors = error.response.data.errors
+          .map((e: any) => `${e.field}: ${e.message}`)
+          .join("\n");
+        Alert.alert("Validation Error", validationErrors);
+      } else {
+        const errorMessage =
+          error.response?.data?.message || "Signup failed. Please try again.";
+        Alert.alert("Signup Failed", errorMessage);
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleGoogleSignup = () => {
@@ -56,16 +128,16 @@ export default function SignupScreen() {
 
       {/* Input Fields */}
       <View style={styles.formContainer}>
-        {/* Username Input */}
+        {/* Full Name Input */}
         <View style={[styles.inputContainer, styles.inputFocused]}>
           <User size={18} color="#7F7F7F" style={styles.inputIcon} />
           <View style={styles.inputContent}>
-            {/* <Text style={styles.inputLabel}>Username</Text> */}
+            {/* <Text style={styles.inputLabel}>Full Name</Text> */}
             <TextInput
               style={styles.input}
-              value={username}
-              onChangeText={setUsername}
-              placeholder="Username"
+              value={fullName}
+              onChangeText={setFullName}
+              placeholder="Full Name"
               placeholderTextColor="#7F7F7F"
             />
           </View>
@@ -85,6 +157,20 @@ export default function SignupScreen() {
           />
         </View>
 
+        {/* Email Input */}
+        <View style={styles.inputContainer}>
+          <Phone size={18} color="#7F7F7F" style={styles.phoneIcon} />
+          <TextInput
+            style={styles.inputField}
+            value={phone}
+            onChangeText={setPhone}
+            placeholder="Phone Number"
+            placeholderTextColor="#7F7F7F"
+            keyboardType="phone-pad"
+            autoCapitalize="none"
+          />
+        </View>
+
         {/* Password Input */}
         <View style={styles.inputContainer}>
           <Lock size={18} color="#7F7F7F" style={styles.passwordIcon} />
@@ -94,13 +180,53 @@ export default function SignupScreen() {
             onChangeText={setPassword}
             placeholder="Password"
             placeholderTextColor="#7F7F7F"
-            secureTextEntry
+            secureTextEntry={!showPassword}
           />
+          <Pressable onPress={() => setShowPassword(!showPassword)}>
+            {showPassword ? (
+              <EyeOff size={18} color="#7F7F7F" />
+            ) : (
+              <Eye size={18} color="#7F7F7F" />
+            )}
+          </Pressable>
+        </View>
+
+        {/* Confirm Password Input */}
+        <View style={styles.inputContainer}>
+          <Lock size={18} color="#7F7F7F" style={styles.passwordIcon} />
+          <TextInput
+            style={styles.inputField}
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            placeholder="Confirm Password"
+            placeholderTextColor="#7F7F7F"
+            secureTextEntry={!showConfirmPassword}
+          />
+          <Pressable
+            onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+          >
+            {showConfirmPassword ? (
+              <EyeOff size={18} color="#7F7F7F" />
+            ) : (
+              <Eye size={18} color="#7F7F7F" />
+            )}
+          </Pressable>
         </View>
 
         {/* Continue Button */}
-        <Pressable style={styles.continueButton} onPress={handleContinue}>
-          <Text style={styles.continueButtonText}>Continue</Text>
+        <Pressable
+          style={[
+            styles.continueButton,
+            loading && styles.continueButtonDisabled,
+          ]}
+          onPress={handleContinue}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.continueButtonText}>Continue</Text>
+          )}
         </Pressable>
       </View>
 
@@ -209,6 +335,9 @@ const styles = StyleSheet.create({
   emailIcon: {
     marginRight: 8,
   },
+  phoneIcon: {
+    marginRight: 8,
+  },
   passwordIcon: {
     marginRight: 8,
   },
@@ -239,6 +368,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginTop: 40,
+  },
+  continueButtonDisabled: {
+    backgroundColor: "#B0D4F1",
   },
   continueButtonText: {
     fontSize: 18,

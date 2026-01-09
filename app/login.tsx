@@ -1,8 +1,12 @@
+import { authService } from "@/src/api";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Lock, Mail } from "lucide-react-native";
+import * as SecureStore from "expo-secure-store";
+import { Eye, EyeOff, Lock, Phone } from "lucide-react-native";
 import { useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   Image,
   Pressable,
   StyleSheet,
@@ -13,12 +17,48 @@ import {
 
 export default function LoginScreen() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-    console.log("Login pressed", { email, password });
-    // API integration will be added later
+  const handleLogin = async () => {
+    if (!phone || !password) {
+      Alert.alert("Error", "Please enter both phone and password");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await authService.login(phone, password);
+
+      // Store tokens securely - response has nested structure { data: { customer, tokens } }
+      await SecureStore.setItemAsync(
+        "accessToken",
+        response.data.tokens.access.token
+      );
+      await SecureStore.setItemAsync(
+        "refreshToken",
+        response.data.tokens.refresh.token
+      );
+
+      // Store customer data
+      await SecureStore.setItemAsync(
+        "userData",
+        JSON.stringify(response.data.customer)
+      );
+
+      Alert.alert("Success", "Logged in successfully!");
+      router.replace("/home");
+    } catch (error: any) {
+      console.error("Login error:", error);
+      const errorMessage =
+        error.response?.data?.message ||
+        "Login failed. Please check your credentials.";
+      Alert.alert("Login Failed", errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleGoogleLogin = () => {
@@ -62,16 +102,16 @@ export default function LoginScreen() {
       <View style={styles.formContainer}>
         {/* Email Input */}
         <View style={[styles.inputContainer, styles.inputFocused]}>
-          <Mail size={18} color="#7F7F7F" style={styles.emailIcon} />
+          <Phone size={18} color="#7F7F7F" style={styles.phoneIcon} />
           <View style={styles.inputContent}>
             {/* <Text style={styles.inputLabel}>Email Address</Text> */}
             <TextInput
               style={styles.input}
-              value={email}
-              onChangeText={setEmail}
-              placeholder="Email Address"
+              value={phone}
+              onChangeText={setPhone}
+              placeholder="Phone Number"
               placeholderTextColor="#7F7F7F"
-              keyboardType="email-address"
+              keyboardType="phone-pad"
               autoCapitalize="none"
             />
           </View>
@@ -86,8 +126,15 @@ export default function LoginScreen() {
             onChangeText={setPassword}
             placeholder="Password"
             placeholderTextColor="#7F7F7F"
-            secureTextEntry
+            secureTextEntry={!showPassword}
           />
+          <Pressable onPress={() => setShowPassword(!showPassword)}>
+            {showPassword ? (
+              <EyeOff size={18} color="#7F7F7F" />
+            ) : (
+              <Eye size={18} color="#7F7F7F" />
+            )}
+          </Pressable>
         </View>
 
         {/* Forgot Password Link */}
@@ -99,8 +146,16 @@ export default function LoginScreen() {
         </Pressable>
 
         {/* Login Button */}
-        <Pressable style={styles.loginButton} onPress={handleLogin}>
-          <Text style={styles.loginButtonText}>Login</Text>
+        <Pressable
+          style={[styles.loginButton, loading && styles.loginButtonDisabled]}
+          onPress={handleLogin}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.loginButtonText}>Login</Text>
+          )}
         </Pressable>
       </View>
 
@@ -203,7 +258,7 @@ const styles = StyleSheet.create({
   inputFocused: {
     borderColor: "#007EF2",
   },
-  emailIcon: {
+  phoneIcon: {
     marginRight: 8,
   },
   passwordIcon: {
@@ -245,6 +300,9 @@ const styles = StyleSheet.create({
     height: 41,
     justifyContent: "center",
     alignItems: "center",
+  },
+  loginButtonDisabled: {
+    backgroundColor: "#B0D4F1",
   },
   loginButtonText: {
     fontSize: 18,
