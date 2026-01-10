@@ -6,6 +6,7 @@ import FilterButton from "@/src/components/home/FilterButton";
 import RoomCard from "@/src/components/home/RoomCard";
 import SearchBar from "@/src/components/home/SearchBar";
 import type { Room } from "@/src/types";
+import { useRouter } from "expo-router";
 import { Bell, ChevronDown } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import {
@@ -18,6 +19,7 @@ import {
 } from "react-native";
 
 export default function HomeScreen() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [dateRange, setDateRange] = useState("24 OCT-26 OCT");
   const [guests, setGuests] = useState(3);
@@ -126,8 +128,10 @@ export default function HomeScreen() {
   };
 
   const handleRoomPress = (id: string) => {
-    // TODO: Navigate to room details
-    console.log("Room pressed:", id);
+    router.push({
+      pathname: "/room-details",
+      params: { id },
+    });
   };
 
   const handleFavoritePress = (id: string) => {

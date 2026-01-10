@@ -1,4 +1,5 @@
-import { Bed, Heart, Users } from "lucide-react-native";
+import { Bed, Heart, Minus, Plus, Users } from "lucide-react-native";
+import { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import type { Room } from "../../types";
 
@@ -15,6 +16,7 @@ export default function RoomCard({
 }: RoomCardProps) {
   const { roomType, roomNumber, floor, status } = room;
   const pricePerNight = parseFloat(roomType.pricePerNight);
+  const [isAmenitiesExpanded, setIsAmenitiesExpanded] = useState(false);
 
   // Format price to display (divide by 1000 for K format if needed)
   const formattedPrice =
@@ -22,10 +24,12 @@ export default function RoomCard({
       ? `${(pricePerNight / 1000).toFixed(0)}K`
       : pricePerNight.toFixed(0);
 
-  // Get first 3 amenities
-  const amenities = roomType.roomTypeTags
-    .slice(0, 3)
-    .map((tag) => tag.roomTag.name);
+  // Get all amenities
+  const allAmenities = roomType.roomTypeTags.map((tag) => tag.roomTag.name);
+  const hasMoreAmenities = allAmenities.length > 3;
+  const displayedAmenities = isAmenitiesExpanded
+    ? allAmenities
+    : allAmenities.slice(0, 3);
 
   return (
     <TouchableOpacity
@@ -80,13 +84,28 @@ export default function RoomCard({
         </View>
 
         {/* Amenities */}
-        {amenities.length > 0 && (
+        {allAmenities.length > 0 && (
           <View style={styles.amenitiesRow}>
-            {amenities.map((amenity, index) => (
+            {displayedAmenities.map((amenity, index) => (
               <View key={index} style={styles.amenityTag}>
                 <Text style={styles.amenityText}>{amenity}</Text>
               </View>
             ))}
+            {hasMoreAmenities && (
+              <TouchableOpacity
+                style={styles.expandButton}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  setIsAmenitiesExpanded(!isAmenitiesExpanded);
+                }}
+              >
+                {isAmenitiesExpanded ? (
+                  <Minus size={10} color="#007ef2" />
+                ) : (
+                  <Plus size={10} color="#007ef2" />
+                )}
+              </TouchableOpacity>
+            )}
           </View>
         )}
 
@@ -220,6 +239,16 @@ const styles = StyleSheet.create({
   priceHighlight: {
     fontFamily: "Roboto_700Bold",
     color: "#007ef2",
+  },
+  expandButton: {
+    backgroundColor: "rgba(0, 126, 242, 0.08)",
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    justifyContent: "center",
+    alignItems: "center",
+    minWidth: 20,
+    height: 16,
   },
   priceNight: {
     color: "rgba(0, 0, 0, 0.81)",
