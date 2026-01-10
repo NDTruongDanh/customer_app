@@ -1,0 +1,227 @@
+import { Bed, Heart, Users } from "lucide-react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import type { Room } from "../../types";
+
+interface RoomCardProps {
+  room: Room;
+  onPress?: () => void;
+  onFavoritePress?: () => void;
+}
+
+export default function RoomCard({
+  room,
+  onPress,
+  onFavoritePress,
+}: RoomCardProps) {
+  const { roomType, roomNumber, floor, status } = room;
+  const pricePerNight = parseFloat(roomType.pricePerNight);
+
+  // Format price to display (divide by 1000 for K format if needed)
+  const formattedPrice =
+    pricePerNight >= 1000
+      ? `${(pricePerNight / 1000).toFixed(0)}K`
+      : pricePerNight.toFixed(0);
+
+  // Get first 3 amenities
+  const amenities = roomType.roomTypeTags
+    .slice(0, 3)
+    .map((tag) => tag.roomTag.name);
+
+  return (
+    <TouchableOpacity
+      style={styles.container}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <View style={styles.card}>
+        {/* Image Placeholder */}
+        <View style={styles.imageContainer}>
+          <View style={styles.placeholderImage}>
+            <Text style={styles.placeholderText}>Room Image</Text>
+          </View>
+        </View>
+
+        {/* Badges Row */}
+        <View style={styles.badgesRow}>
+          <View
+            style={[
+              styles.statusBadge,
+              status === "AVAILABLE" && styles.availableBadge,
+            ]}
+          >
+            <Text style={styles.statusText}>{status}</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.favoriteButton}
+            onPress={onFavoritePress}
+          >
+            <Heart size={14} color="#007ef2" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Room Type Name */}
+        <Text style={styles.roomTypeName}>{roomType.name}</Text>
+
+        {/* Room Number & Floor */}
+        <Text style={styles.roomDetails}>
+          Room {roomNumber} • Floor {floor}
+        </Text>
+
+        {/* Capacity & Beds */}
+        <View style={styles.detailsRow}>
+          <View style={styles.detailItem}>
+            <Users size={12} color="#7f7f7f" />
+            <Text style={styles.detailText}>{roomType.capacity} guests</Text>
+          </View>
+          <View style={styles.detailItem}>
+            <Bed size={12} color="#7f7f7f" />
+            <Text style={styles.detailText}>{roomType.totalBed} bed</Text>
+          </View>
+        </View>
+
+        {/* Amenities */}
+        {amenities.length > 0 && (
+          <View style={styles.amenitiesRow}>
+            {amenities.map((amenity, index) => (
+              <View key={index} style={styles.amenityTag}>
+                <Text style={styles.amenityText}>{amenity}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Price */}
+        <Text style={styles.priceText}>
+          <Text style={styles.priceHighlight}>{formattedPrice} VND</Text>
+          <Text style={styles.priceNight}> /night</Text>
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    marginRight: 12,
+  },
+  card: {
+    width: 197,
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    paddingBottom: 12,
+    // Shadow for iOS
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    // Shadow for Android
+    elevation: 3,
+  },
+  imageContainer: {
+    width: "100%",
+    height: 134,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#ffd700",
+    overflow: "hidden",
+  },
+  placeholderImage: {
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#e8f4fd",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  placeholderText: {
+    fontSize: 12,
+    color: "#007ef2",
+    fontFamily: "Roboto_400Regular",
+  },
+  badgesRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
+    paddingHorizontal: 8,
+  },
+  statusBadge: {
+    backgroundColor: "rgba(127, 127, 127, 0.12)",
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginRight: 6,
+  },
+  availableBadge: {
+    backgroundColor: "rgba(0, 200, 83, 0.12)",
+  },
+  statusText: {
+    fontSize: 7,
+    color: "#7f7f7f",
+    fontFamily: "OpenSans_400Regular",
+    textTransform: "capitalize",
+  },
+  favoriteButton: {
+    marginLeft: "auto",
+  },
+  roomTypeName: {
+    fontSize: 14,
+    fontFamily: "Roboto_700Bold",
+    color: "rgba(0, 0, 0, 0.81)",
+    marginTop: 8,
+    paddingHorizontal: 8,
+  },
+  roomDetails: {
+    fontSize: 10,
+    fontFamily: "Roboto_400Regular",
+    color: "#7f7f7f",
+    marginTop: 2,
+    paddingHorizontal: 8,
+  },
+  detailsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 6,
+    paddingHorizontal: 8,
+    gap: 12,
+  },
+  detailItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  detailText: {
+    fontSize: 9,
+    fontFamily: "Roboto_300Light",
+    color: "#7f7f7f",
+  },
+  amenitiesRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginTop: 6,
+    paddingHorizontal: 8,
+    gap: 4,
+  },
+  amenityTag: {
+    backgroundColor: "rgba(0, 126, 242, 0.08)",
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  amenityText: {
+    fontSize: 7,
+    color: "#007ef2",
+    fontFamily: "OpenSans_400Regular",
+  },
+  priceText: {
+    marginTop: 8,
+    paddingHorizontal: 8,
+    fontSize: 10,
+    fontFamily: "Roboto_300Light",
+  },
+  priceHighlight: {
+    fontFamily: "Roboto_700Bold",
+    color: "#007ef2",
+  },
+  priceNight: {
+    color: "rgba(0, 0, 0, 0.81)",
+  },
+});

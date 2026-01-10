@@ -1,12 +1,15 @@
+import { roomService } from "@/src/api";
 import BusinessCard from "@/src/components/home/BusinessCard";
 import DateGuestSelector from "@/src/components/home/DateGuestSelector";
 import DateRangePicker from "@/src/components/home/DateRangePicker";
 import FilterButton from "@/src/components/home/FilterButton";
-import HotelCard from "@/src/components/home/HotelCard";
+import RoomCard from "@/src/components/home/RoomCard";
 import SearchBar from "@/src/components/home/SearchBar";
+import type { Room } from "@/src/types";
 import { Bell, ChevronDown } from "lucide-react-native";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -22,31 +25,48 @@ export default function HomeScreen() {
   const [checkInDate, setCheckInDate] = useState<Date | undefined>(undefined);
   const [checkOutDate, setCheckOutDate] = useState<Date | undefined>(undefined);
 
-  // Mock data - will be replaced with actual API calls
-  const recommendedHotels = [
-    {
-      id: "1",
-      name: "AYANA Resort",
-      location: "Bali, Indonesia",
-      rating: 4.5,
-      priceMin: 200,
-      priceMax: 500,
-      discount: "10% OFF",
-      imageUrl:
-        "https://www.figma.com/api/mcp/asset/23b4a9be-c4cd-40ec-9c30-1ee1d0480a47",
-    },
-    {
-      id: "2",
-      name: "COMO Uma Re",
-      location: "Bali, Indonesia",
-      rating: 4.5,
-      priceMin: 300,
-      priceMax: 500,
-      discount: "10% OFF",
-      imageUrl:
-        "https://www.figma.com/api/mcp/asset/1f32878d-8da3-4c92-86ae-d886f610c658",
-    },
-  ];
+  // Rooms state
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [isLoadingRooms, setIsLoadingRooms] = useState(false);
+  const [roomsError, setRoomsError] = useState<string | null>(null);
+
+  // Fetch rooms on mount
+  useEffect(() => {
+    fetchRooms();
+  }, []);
+
+  const fetchRooms = async () => {
+    try {
+      setIsLoadingRooms(true);
+      setRoomsError(null);
+
+      const response = await roomService.getRooms({
+        page: 1,
+        limit: 10,
+      });
+      setRooms(response.data.data);
+    } catch (error: any) {
+      console.error("Error fetching rooms:", error);
+      console.error("Error response:", error.response?.data);
+      console.error("Error status:", error.response?.status);
+
+      let errorMessage = "Failed to load rooms. Please try again.";
+
+      // Check for authentication error
+      if (
+        error.response?.status === 401 ||
+        error.response?.data?.code === 401
+      ) {
+        errorMessage = "Please login to view available rooms.";
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+
+      setRoomsError(errorMessage);
+    } finally {
+      setIsLoadingRooms(false);
+    }
+  };
 
   const businessAccommodates = [
     {
@@ -105,9 +125,9 @@ export default function HomeScreen() {
     console.log("Open filter");
   };
 
-  const handleHotelPress = (id: string) => {
-    // TODO: Navigate to hotel details
-    console.log("Hotel pressed:", id);
+  const handleRoomPress = (id: string) => {
+    // TODO: Navigate to room details
+    console.log("Room pressed:", id);
   };
 
   const handleFavoritePress = (id: string) => {
@@ -147,23 +167,41 @@ export default function HomeScreen() {
         <FilterButton onPress={handleFilterPress} />
       </View>
 
-      {/* Recommended Hotels Section */}
-      <Text style={styles.sectionTitle}>Recommended Hotels</Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.horizontalScroll}
-        contentContainerStyle={styles.horizontalScrollContent}
-      >
-        {recommendedHotels.map((hotel) => (
-          <HotelCard
-            key={hotel.id}
-            {...hotel}
-            onPress={() => handleHotelPress(hotel.id)}
-            onFavoritePress={() => handleFavoritePress(hotel.id)}
-          />
-        ))}
-      </ScrollView>
+      {/* Available Rooms Section */}
+      <Text style={styles.sectionTitle}>Available Rooms</Text>
+
+      {isLoadingRooms ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#007ef2" />
+        </View>
+      ) : roomsError ? (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{roomsError}</Text>
+          <TouchableOpacity onPress={fetchRooms} style={styles.retryButton}>
+            <Text style={styles.retryText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      ) : rooms.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>No rooms available</Text>
+        </View>
+      ) : (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.horizontalScroll}
+          contentContainerStyle={styles.horizontalScrollContent}
+        >
+          {rooms.map((room) => (
+            <RoomCard
+              key={room.id}
+              room={room}
+              onPress={() => handleRoomPress(room.id)}
+              onFavoritePress={() => handleFavoritePress(room.id)}
+            />
+          ))}
+        </ScrollView>
+      )}
 
       {/* Business Accommodates Section */}
       <Text style={styles.sectionTitle}>Business Accommodates</Text>
@@ -253,5 +291,44 @@ const styles = StyleSheet.create({
   },
   bottomSpacing: {
     height: 80,
+  },
+  loadingContainer: {
+    paddingVertical: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  errorContainer: {
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+    alignItems: "center",
+  },
+  errorText: {
+    fontSize: 14,
+    fontFamily: "Roboto_400Regular",
+    color: "#ff0000",
+    textAlign: "center",
+    marginBottom: 12,
+  },
+  retryButton: {
+    backgroundColor: "#007ef2",
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  retryText: {
+    fontSize: 14,
+    fontFamily: "Roboto_700Bold",
+    color: "#fff",
+  },
+  emptyContainer: {
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+    alignItems: "center",
+  },
+  emptyText: {
+    fontSize: 14,
+    fontFamily: "Roboto_400Regular",
+    color: "#7f7f7f",
+    textAlign: "center",
   },
 });
