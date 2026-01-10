@@ -49,7 +49,7 @@ export default function LoginScreen() {
       );
 
       Alert.alert("Success", "Logged in successfully!");
-      router.replace("/home");
+      router.replace("/(tabs)/home");
     } catch (error: any) {
       console.error("Login error:", error);
       const errorMessage =

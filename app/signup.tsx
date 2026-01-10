@@ -74,7 +74,7 @@ export default function SignupScreen() {
       );
 
       Alert.alert("Success", "Account created successfully!");
-      router.replace("/home");
+      router.replace("/(tabs)/home");
     } catch (error: any) {
       console.error("Signup error:", error);
 
