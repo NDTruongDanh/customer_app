@@ -1,12 +1,12 @@
 import { authService } from "@/src/api";
+import { showAlert } from "@/src/utils/alert";
 import { MaterialIcons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import * as SecureStore from "expo-secure-store";
 import { Eye, EyeOff, Lock, Phone } from "lucide-react-native";
 import { useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Image,
   Pressable,
   StyleSheet,
@@ -25,7 +25,7 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!phone || !password) {
-      Alert.alert("Error", "Please enter both phone and password");
+      showAlert("Error", "Please enter both phone and password");
       return;
     }
 
@@ -34,29 +34,29 @@ export default function LoginScreen() {
       const response = await authService.login(phone, password);
 
       // Store tokens securely - response has nested structure { data: { customer, tokens } }
-      await SecureStore.setItemAsync(
+      await AsyncStorage.setItem(
         "accessToken",
         response.data.tokens.access.token
       );
-      await SecureStore.setItemAsync(
+      await AsyncStorage.setItem(
         "refreshToken",
         response.data.tokens.refresh.token
       );
 
       // Store customer data
-      await SecureStore.setItemAsync(
+      await AsyncStorage.setItem(
         "userData",
         JSON.stringify(response.data.customer)
       );
 
-      Alert.alert("Success", "Logged in successfully!");
+      showAlert("Success", "Logged in successfully!");
       router.replace("/(tabs)/home");
     } catch (error: any) {
       console.error("Login error:", error);
       const errorMessage =
         error.response?.data?.message ||
         "Login failed. Please check your credentials.";
-      Alert.alert("Login Failed", errorMessage);
+      showAlert("Login Failed", errorMessage);
     } finally {
       setLoading(false);
     }

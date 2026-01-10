@@ -7,8 +7,8 @@
 
 import { authService } from "@/src/api";
 import { RegisterData } from "@/src/types";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import * as SecureStore from "expo-secure-store";
 import { useState } from "react";
 import { Alert } from "react-native";
 
@@ -29,17 +29,11 @@ export const useLogin = () => {
       const response = await authService.login(email, password);
 
       // Store tokens securely
-      await SecureStore.setItemAsync(
-        "accessToken",
-        response.tokens.access.token
-      );
-      await SecureStore.setItemAsync(
-        "refreshToken",
-        response.tokens.refresh.token
-      );
+      await AsyncStorage.setItem("accessToken", response.tokens.access.token);
+      await AsyncStorage.setItem("refreshToken", response.tokens.refresh.token);
 
       // Optionally store user data
-      await SecureStore.setItemAsync("userData", JSON.stringify(response.user));
+      await AsyncStorage.setItem("userData", JSON.stringify(response.user));
 
       // Show success message
       Alert.alert("Success", "Logged in successfully!");
@@ -79,17 +73,11 @@ export const useSignup = () => {
       const response = await authService.register(data);
 
       // Store tokens securely
-      await SecureStore.setItemAsync(
-        "accessToken",
-        response.tokens.access.token
-      );
-      await SecureStore.setItemAsync(
-        "refreshToken",
-        response.tokens.refresh.token
-      );
+      await AsyncStorage.setItem("accessToken", response.tokens.access.token);
+      await AsyncStorage.setItem("refreshToken", response.tokens.refresh.token);
 
       // Optionally store user data
-      await SecureStore.setItemAsync("userData", JSON.stringify(response.user));
+      await AsyncStorage.setItem("userData", JSON.stringify(response.user));
 
       // Show success message
       Alert.alert("Success", "Account created successfully!");
@@ -135,7 +123,7 @@ export const useLogout = () => {
 
     try {
       // Get refresh token
-      const refreshToken = await SecureStore.getItemAsync("refreshToken");
+      const refreshToken = await AsyncStorage.getItem("refreshToken");
 
       if (refreshToken) {
         // Call logout API
@@ -143,9 +131,9 @@ export const useLogout = () => {
       }
 
       // Clear all stored data
-      await SecureStore.deleteItemAsync("accessToken");
-      await SecureStore.deleteItemAsync("refreshToken");
-      await SecureStore.deleteItemAsync("userData");
+      await AsyncStorage.removeItem("accessToken");
+      await AsyncStorage.removeItem("refreshToken");
+      await AsyncStorage.removeItem("userData");
 
       // Navigate to welcome/login screen
       router.replace("/welcome");
@@ -155,9 +143,9 @@ export const useLogout = () => {
       console.error("Logout error:", err);
 
       // Clear tokens even if API call fails
-      await SecureStore.deleteItemAsync("accessToken");
-      await SecureStore.deleteItemAsync("refreshToken");
-      await SecureStore.deleteItemAsync("userData");
+      await AsyncStorage.removeItem("accessToken");
+      await AsyncStorage.removeItem("refreshToken");
+      await AsyncStorage.removeItem("userData");
 
       // Still navigate to login
       router.replace("/welcome");
@@ -179,9 +167,9 @@ export const useAuth = () => {
 
   const checkAuth = async () => {
     try {
-      const accessToken = await SecureStore.getItemAsync("accessToken");
-      const refreshToken = await SecureStore.getItemAsync("refreshToken");
-      const userData = await SecureStore.getItemAsync("userData");
+      const accessToken = await AsyncStorage.getItem("accessToken");
+      const refreshToken = await AsyncStorage.getItem("refreshToken");
+      const userData = await AsyncStorage.getItem("userData");
 
       if (accessToken && refreshToken) {
         setIsAuthenticated(true);

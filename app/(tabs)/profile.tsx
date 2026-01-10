@@ -1,7 +1,8 @@
 import { authService } from "@/src/api";
 import type { Customer } from "@/src/types";
+import { showAlert, showConfirm } from "@/src/utils/alert";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import * as SecureStore from "expo-secure-store";
 import {
   CreditCard,
   Edit3,
@@ -14,7 +15,6 @@ import {
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -40,7 +40,7 @@ export default function ProfileScreen() {
       setProfile(response.data);
     } catch (error) {
       console.error("Error loading user profile:", error);
-      Alert.alert("Error", "Failed to load profile data");
+      showAlert("Error", "Failed to load profile data");
     } finally {
       setLoading(false);
     }
@@ -53,46 +53,43 @@ export default function ProfileScreen() {
   };
 
   const handleLogout = async () => {
-    Alert.alert("Logout", "Are you sure you want to logout?", [
-      {
-        text: "Cancel",
-        style: "cancel",
-      },
-      {
-        text: "Logout",
-        style: "destructive",
-        onPress: async () => {
-          setLoggingOut(true);
-          try {
-            const refreshToken = await SecureStore.getItemAsync("refreshToken");
+    const confirmed = await showConfirm(
+      "Logout",
+      "Are you sure you want to logout?",
+      "Logout",
+      "Cancel"
+    );
 
-            if (refreshToken) {
-              await authService.logout(refreshToken);
-            }
+    if (!confirmed) return;
 
-            // Clear all stored data
-            await SecureStore.deleteItemAsync("accessToken");
-            await SecureStore.deleteItemAsync("refreshToken");
-            await SecureStore.deleteItemAsync("userData");
+    setLoggingOut(true);
+    try {
+      const refreshToken = await AsyncStorage.getItem("refreshToken");
 
-            Alert.alert("Success", "Logged out successfully!");
-            router.replace("/welcome");
-          } catch (error: any) {
-            console.error("Logout error:", error);
+      if (refreshToken) {
+        await authService.logout(refreshToken);
+      }
 
-            // Clear tokens even if API call fails
-            await SecureStore.deleteItemAsync("accessToken");
-            await SecureStore.deleteItemAsync("refreshToken");
-            await SecureStore.deleteItemAsync("userData");
+      // Clear all stored data
+      await AsyncStorage.removeItem("accessToken");
+      await AsyncStorage.removeItem("refreshToken");
+      await AsyncStorage.removeItem("userData");
 
-            Alert.alert("Logged Out", "You have been logged out.");
-            router.replace("/welcome");
-          } finally {
-            setLoggingOut(false);
-          }
-        },
-      },
-    ]);
+      showAlert("Success", "Logged out successfully!");
+      router.replace("/welcome");
+    } catch (error: any) {
+      console.error("Logout error:", error);
+
+      // Clear tokens even if API call fails
+      await AsyncStorage.removeItem("accessToken");
+      await AsyncStorage.removeItem("refreshToken");
+      await AsyncStorage.removeItem("userData");
+
+      showAlert("Logged Out", "You have been logged out.");
+      router.replace("/welcome");
+    } finally {
+      setLoggingOut(false);
+    }
   };
 
   if (loading) {

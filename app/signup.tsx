@@ -1,13 +1,13 @@
 import { authService } from "@/src/api";
 import type { RegisterData } from "@/src/types";
+import { showAlert } from "@/src/utils/alert";
 import { MaterialIcons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import * as SecureStore from "expo-secure-store";
 import { Eye, EyeOff, Lock, Mail, Phone, User } from "lucide-react-native";
 import { useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Image,
   Pressable,
   StyleSheet,
@@ -30,20 +30,20 @@ export default function SignupScreen() {
 
   const handleContinue = async () => {
     if (!fullName || !email || !password || !confirmPassword || !phone) {
-      Alert.alert("Error", "Please fill in all required fields");
+      showAlert("Error", "Please fill in all required fields");
       return;
     }
 
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      Alert.alert("Error", "Please enter a valid email address");
+      showAlert("Error", "Please enter a valid email address");
       return;
     }
 
     // Password validation
     if (password !== confirmPassword) {
-      Alert.alert("Error", "Passwords do not match");
+      showAlert("Error", "Passwords do not match");
       return;
     }
 
@@ -59,22 +59,22 @@ export default function SignupScreen() {
       const response = await authService.register(registerData);
 
       // Store tokens securely - response has nested structure { data: { customer, tokens } }
-      await SecureStore.setItemAsync(
+      await AsyncStorage.setItem(
         "accessToken",
         response.data.tokens.access.token
       );
-      await SecureStore.setItemAsync(
+      await AsyncStorage.setItem(
         "refreshToken",
         response.data.tokens.refresh.token
       );
 
       // Store customer data
-      await SecureStore.setItemAsync(
+      await AsyncStorage.setItem(
         "userData",
         JSON.stringify(response.data.customer)
       );
 
-      Alert.alert("Success", "Account created successfully!");
+      showAlert("Success", "Account created successfully!");
       router.replace("/(tabs)/home");
     } catch (error: any) {
       console.error("Signup error:", error);
@@ -84,11 +84,11 @@ export default function SignupScreen() {
         const validationErrors = error.response.data.errors
           .map((e: any) => `${e.field}: ${e.message}`)
           .join("\n");
-        Alert.alert("Validation Error", validationErrors);
+        showAlert("Validation Error", validationErrors);
       } else {
         const errorMessage =
           error.response?.data?.message || "Signup failed. Please try again.";
-        Alert.alert("Signup Failed", errorMessage);
+        showAlert("Signup Failed", errorMessage);
       }
     } finally {
       setLoading(false);

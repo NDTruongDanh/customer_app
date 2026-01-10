@@ -3,12 +3,12 @@
  * Includes request/response interceptors for authentication
  */
 
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios, {
   AxiosError,
   AxiosInstance,
   InternalAxiosRequestConfig,
 } from "axios";
-import * as SecureStore from "expo-secure-store";
 import { API_BASE_URL, API_TIMEOUT } from "../constants/config";
 
 /**
@@ -30,7 +30,7 @@ apiClient.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
     try {
       // Get access token from secure storage
-      const accessToken = await SecureStore.getItemAsync("accessToken");
+      const accessToken = await AsyncStorage.getItem("accessToken");
 
       if (accessToken && config.headers) {
         // Add Bearer token to Authorization header
@@ -70,7 +70,7 @@ apiClient.interceptors.response.use(
 
         try {
           // Try to refresh the token
-          const refreshToken = await SecureStore.getItemAsync("refreshToken");
+          const refreshToken = await AsyncStorage.getItem("refreshToken");
 
           if (refreshToken) {
             // Import authService to avoid circular dependency
@@ -82,11 +82,11 @@ apiClient.interceptors.response.use(
             const response = await authService.refreshTokens(refreshToken);
 
             // Store new tokens
-            await SecureStore.setItemAsync(
+            await AsyncStorage.setItem(
               "accessToken",
               response.tokens.access.token
             );
-            await SecureStore.setItemAsync(
+            await AsyncStorage.setItem(
               "refreshToken",
               response.tokens.refresh.token
             );
