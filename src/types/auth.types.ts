@@ -91,6 +91,23 @@ export interface ResetPasswordData {
 }
 
 /**
+ * Customer profile response
+ */
+export interface CustomerProfileResponse {
+  data: Customer;
+}
+
+/**
+ * Update profile data payload
+ */
+export interface UpdateProfileData {
+  fullName?: string;
+  email?: string;
+  idNumber?: string;
+  address?: string;
+}
+
+/**
  * API Error response structure
  */
 export interface ApiError {

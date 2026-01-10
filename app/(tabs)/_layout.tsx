@@ -1,10 +1,12 @@
 import { Tabs } from "expo-router";
 import { Calendar, Home, User } from "lucide-react-native";
 import { StyleSheet } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function TabLayout() {
   return (
-    <Tabs
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <Tabs
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: "#007ef2",
@@ -38,10 +40,15 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#f5fafe",
+  },
   tabBar: {
     backgroundColor: "#fff",
     borderTopWidth: 0,

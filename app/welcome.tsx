@@ -1,80 +1,90 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function WelcomeScreen() {
   const router = useRouter();
 
   return (
-    <View style={styles.container}>
-      {/* Decorative Background Images */}
-      <View style={styles.imageContainer}>
-        {/* Main large circular image - top left */}
-        <View style={styles.mainImageWrapper}>
-          <Image
-            source={{
-              uri: "https://www.figma.com/api/mcp/asset/bfcaac28-a6b8-433e-af14-524ef057c953",
-            }}
-            style={styles.mainImage}
-            resizeMode="cover"
-          />
+    <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
+      <View style={styles.container}>
+        {/* Decorative Background Images */}
+        <View style={styles.imageContainer}>
+          {/* Main large circular image - top left */}
+          <View style={styles.mainImageWrapper}>
+            <Image
+              source={{
+                uri: "https://www.figma.com/api/mcp/asset/bfcaac28-a6b8-433e-af14-524ef057c953",
+              }}
+              style={styles.mainImage}
+              resizeMode="cover"
+            />
+          </View>
+
+          {/* Small circular image - bottom left */}
+          <View style={styles.smallImageLeft}>
+            <Image
+              source={{
+                uri: "https://www.figma.com/api/mcp/asset/e2c07ef3-9616-4c73-8645-eed20b3b0875",
+              }}
+              style={styles.smallImageStyle}
+              resizeMode="cover"
+            />
+          </View>
+
+          {/* Small circular image - top right */}
+          <View style={styles.smallImageRight}>
+            <Image
+              source={{
+                uri: "https://www.figma.com/api/mcp/asset/cfed94f4-9caa-4fe8-9b19-8404447ecb9e",
+              }}
+              style={styles.smallImageStyle}
+              resizeMode="cover"
+            />
+          </View>
         </View>
 
-        {/* Small circular image - bottom left */}
-        <View style={styles.smallImageLeft}>
-          <Image
-            source={{
-              uri: "https://www.figma.com/api/mcp/asset/e2c07ef3-9616-4c73-8645-eed20b3b0875",
-            }}
-            style={styles.smallImageStyle}
-            resizeMode="cover"
-          />
-        </View>
+        {/* Content Section */}
+        <View style={styles.contentContainer}>
+          <Text style={styles.title}>Unleash Your Inner Traveller</Text>
+          <Text style={styles.description}>
+            Your passport to a world of extraordinary hotel experiences. Join us
+            today and unlock a realm of comfort, luxury, and adventure.
+          </Text>
 
-        {/* Small circular image - top right */}
-        <View style={styles.smallImageRight}>
-          <Image
-            source={{
-              uri: "https://www.figma.com/api/mcp/asset/cfed94f4-9caa-4fe8-9b19-8404447ecb9e",
-            }}
-            style={styles.smallImageStyle}
-            resizeMode="cover"
-          />
-        </View>
-      </View>
-
-      {/* Content Section */}
-      <View style={styles.contentContainer}>
-        <Text style={styles.title}>Unleash Your Inner Traveller</Text>
-        <Text style={styles.description}>
-          Your passport to a world of extraordinary hotel experiences. Join us
-          today and unlock a realm of comfort, luxury, and adventure.
-        </Text>
-
-        {/* Start Exploring Button */}
-        <Pressable style={styles.button} onPress={() => router.push("/signup")}>
-          <Text style={styles.buttonText}>Start Exploring</Text>
-          <MaterialIcons
-            name="arrow-forward"
-            size={20}
-            color="#FFFFFF"
-            style={styles.arrowIcon}
-          />
-        </Pressable>
-
-        {/* Login Link */}
-        <View style={styles.loginContainer}>
-          <Text style={styles.loginText}>Already have an account? </Text>
-          <Pressable onPress={() => router.push("/login")}>
-            <Text style={styles.loginLink}>Login</Text>
+          {/* Start Exploring Button */}
+          <Pressable
+            style={styles.button}
+            onPress={() => router.push("/signup")}
+          >
+            <Text style={styles.buttonText}>Start Exploring</Text>
+            <MaterialIcons
+              name="arrow-forward"
+              size={20}
+              color="#FFFFFF"
+              style={styles.arrowIcon}
+            />
           </Pressable>
+
+          {/* Login Link */}
+          <View style={styles.loginContainer}>
+            <Text style={styles.loginText}>Already have an account? </Text>
+            <Pressable onPress={() => router.push("/login")}>
+              <Text style={styles.loginLink}>Login</Text>
+            </Pressable>
+          </View>
         </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#F5FAFE",
+  },
   container: {
     flex: 1,
     backgroundColor: "#F5FAFE",

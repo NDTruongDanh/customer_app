@@ -14,6 +14,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -81,127 +82,136 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      {/* Back Button */}
-      <Pressable style={styles.backButton} onPress={() => router.back()}>
-        <MaterialIcons name="arrow-back" size={24} color="#007EF2" />
-      </Pressable>
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <View style={styles.container}>
+        {/* Back Button */}
+        <Pressable style={styles.backButton} onPress={() => router.back()}>
+          <MaterialIcons name="arrow-back" size={24} color="#007EF2" />
+        </Pressable>
 
-      {/* Title */}
-      <View style={styles.headerContainer}>
-        <Text style={styles.title}>
-          <Text style={styles.titleWelcome}>Welcome</Text>{" "}
-          <Text style={styles.titleBack}>Back</Text>
-        </Text>
-        <Text style={styles.subtitle}>
-          We missed you! Login to continue your journey with us.
-        </Text>
-      </View>
-
-      {/* Input Fields */}
-      <View style={styles.formContainer}>
-        {/* Email Input */}
-        <View style={[styles.inputContainer, styles.inputFocused]}>
-          <Phone size={18} color="#7F7F7F" style={styles.phoneIcon} />
-          <View style={styles.inputContent}>
-            {/* <Text style={styles.inputLabel}>Email Address</Text> */}
-            <TextInput
-              style={styles.input}
-              value={phone}
-              onChangeText={setPhone}
-              placeholder="Phone Number"
-              placeholderTextColor="#7F7F7F"
-              keyboardType="phone-pad"
-              autoCapitalize="none"
-            />
-          </View>
+        {/* Title */}
+        <View style={styles.headerContainer}>
+          <Text style={styles.title}>
+            <Text style={styles.titleWelcome}>Welcome</Text>{" "}
+            <Text style={styles.titleBack}>Back</Text>
+          </Text>
+          <Text style={styles.subtitle}>
+            We missed you! Login to continue your journey with us.
+          </Text>
         </View>
 
-        {/* Password Input */}
-        <View style={styles.inputContainer}>
-          <Lock size={18} color="#7F7F7F" style={styles.passwordIcon} />
-          <TextInput
-            style={styles.inputField}
-            value={password}
-            onChangeText={setPassword}
-            placeholder="Password"
-            placeholderTextColor="#7F7F7F"
-            secureTextEntry={!showPassword}
-          />
-          <Pressable onPress={() => setShowPassword(!showPassword)}>
-            {showPassword ? (
-              <EyeOff size={18} color="#7F7F7F" />
+        {/* Input Fields */}
+        <View style={styles.formContainer}>
+          {/* Email Input */}
+          <View style={[styles.inputContainer, styles.inputFocused]}>
+            <Phone size={18} color="#7F7F7F" style={styles.phoneIcon} />
+            <View style={styles.inputContent}>
+              {/* <Text style={styles.inputLabel}>Email Address</Text> */}
+              <TextInput
+                style={styles.input}
+                value={phone}
+                onChangeText={setPhone}
+                placeholder="Phone Number"
+                placeholderTextColor="#7F7F7F"
+                keyboardType="phone-pad"
+                autoCapitalize="none"
+              />
+            </View>
+          </View>
+
+          {/* Password Input */}
+          <View style={styles.inputContainer}>
+            <Lock size={18} color="#7F7F7F" style={styles.passwordIcon} />
+            <TextInput
+              style={styles.inputField}
+              value={password}
+              onChangeText={setPassword}
+              placeholder="Password"
+              placeholderTextColor="#7F7F7F"
+              secureTextEntry={!showPassword}
+            />
+            <Pressable onPress={() => setShowPassword(!showPassword)}>
+              {showPassword ? (
+                <EyeOff size={18} color="#7F7F7F" />
+              ) : (
+                <Eye size={18} color="#7F7F7F" />
+              )}
+            </Pressable>
+          </View>
+
+          {/* Forgot Password Link */}
+          <Pressable
+            style={styles.forgotPasswordContainer}
+            onPress={handleForgotPassword}
+          >
+            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+          </Pressable>
+
+          {/* Login Button */}
+          <Pressable
+            style={[styles.loginButton, loading && styles.loginButtonDisabled]}
+            onPress={handleLogin}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
             ) : (
-              <Eye size={18} color="#7F7F7F" />
+              <Text style={styles.loginButtonText}>Login</Text>
             )}
           </Pressable>
         </View>
 
-        {/* Forgot Password Link */}
-        <Pressable
-          style={styles.forgotPasswordContainer}
-          onPress={handleForgotPassword}
-        >
-          <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-        </Pressable>
+        {/* Social Login Section */}
+        <View style={styles.socialContainer}>
+          <View style={styles.dividerContainer}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>Or continue with</Text>
+            <View style={styles.dividerLine} />
+          </View>
 
-        {/* Login Button */}
-        <Pressable
-          style={[styles.loginButton, loading && styles.loginButtonDisabled]}
-          onPress={handleLogin}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.loginButtonText}>Login</Text>
-          )}
-        </Pressable>
-      </View>
+          <View style={styles.socialButtonsContainer}>
+            {/* Google Button */}
+            <Pressable style={styles.socialButton} onPress={handleGoogleLogin}>
+              <Image
+                source={{
+                  uri: "https://www.figma.com/api/mcp/asset/12e332db-c425-4990-b013-72d2282901a1",
+                }}
+                style={styles.socialIcon}
+              />
+            </Pressable>
 
-      {/* Social Login Section */}
-      <View style={styles.socialContainer}>
-        <View style={styles.dividerContainer}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>Or continue with</Text>
-          <View style={styles.dividerLine} />
+            {/* Facebook Button */}
+            <Pressable
+              style={styles.socialButton}
+              onPress={handleFacebookLogin}
+            >
+              <Image
+                source={{
+                  uri: "https://www.figma.com/api/mcp/asset/567452e6-96c2-42b3-8e11-c74eceb4818e",
+                }}
+                style={styles.socialIcon}
+              />
+            </Pressable>
+          </View>
         </View>
 
-        <View style={styles.socialButtonsContainer}>
-          {/* Google Button */}
-          <Pressable style={styles.socialButton} onPress={handleGoogleLogin}>
-            <Image
-              source={{
-                uri: "https://www.figma.com/api/mcp/asset/12e332db-c425-4990-b013-72d2282901a1",
-              }}
-              style={styles.socialIcon}
-            />
-          </Pressable>
-
-          {/* Facebook Button */}
-          <Pressable style={styles.socialButton} onPress={handleFacebookLogin}>
-            <Image
-              source={{
-                uri: "https://www.figma.com/api/mcp/asset/567452e6-96c2-42b3-8e11-c74eceb4818e",
-              }}
-              style={styles.socialIcon}
-            />
+        {/* Signup Link */}
+        <View style={styles.signupContainer}>
+          <Text style={styles.signupText}>Doesnot have an account? </Text>
+          <Pressable onPress={handleSignupPress}>
+            <Text style={styles.signupLink}>Signup</Text>
           </Pressable>
         </View>
       </View>
-
-      {/* Signup Link */}
-      <View style={styles.signupContainer}>
-        <Text style={styles.signupText}>Doesnot have an account? </Text>
-        <Pressable onPress={handleSignupPress}>
-          <Text style={styles.signupLink}>Signup</Text>
-        </Pressable>
-      </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#F5FAFE",
+  },
   container: {
     flex: 1,
     backgroundColor: "#F5FAFE",

@@ -5,12 +5,14 @@
 
 import {
   AuthResponse,
+  CustomerProfileResponse,
   ForgotPasswordData,
   LoginData,
   LogoutData,
   RefreshTokensData,
   RegisterData,
   ResetPasswordData,
+  UpdateProfileData,
 } from "../../types/auth.types";
 import apiClient from "../client";
 
@@ -103,6 +105,36 @@ export const authService = {
   resetPassword: async (token: string, password: string): Promise<void> => {
     const data: ResetPasswordData = { token, password };
     await apiClient.post("/customer/auth/reset-password", data);
+  },
+
+  /**
+   * Get customer profile
+   * GET /customer/profile
+   *
+   * @returns Promise with customer profile data
+   */
+  getProfile: async (): Promise<CustomerProfileResponse> => {
+    const response = await apiClient.get<CustomerProfileResponse>(
+      "/customer/profile"
+    );
+    return response.data;
+  },
+
+  /**
+   * Update customer profile
+   * PATCH /customer/profile
+   *
+   * @param data - Profile update data (fullName, email, idNumber, address)
+   * @returns Promise with updated customer profile data
+   */
+  updateProfile: async (
+    data: UpdateProfileData
+  ): Promise<CustomerProfileResponse> => {
+    const response = await apiClient.patch<CustomerProfileResponse>(
+      "/customer/profile",
+      data
+    );
+    return response.data;
   },
 };
 

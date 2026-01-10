@@ -1,0 +1,370 @@
+import { authService } from "@/src/api";
+import type { Customer } from "@/src/types";
+import { useRouter } from "expo-router";
+import { ArrowLeft, Save } from "lucide-react-native";
+import { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+
+export default function EditProfileScreen() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  // Form state
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [idNumber, setIdNumber] = useState("");
+  const [address, setAddress] = useState("");
+
+  // Original data for comparison
+  const [originalData, setOriginalData] = useState<Customer | null>(null);
+
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  const loadProfile = async () => {
+    try {
+      const response = await authService.getProfile();
+      const profile = response.data;
+
+      setOriginalData(profile);
+      setFullName(profile.fullName || "");
+      setEmail(profile.email || "");
+      setIdNumber(profile.idNumber || "");
+      setAddress(profile.address || "");
+    } catch (error) {
+      console.error("Error loading profile:", error);
+      Alert.alert("Error", "Failed to load profile data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const hasChanges = () => {
+    if (!originalData) return false;
+    return (
+      fullName !== (originalData.fullName || "") ||
+      email !== (originalData.email || "") ||
+      idNumber !== (originalData.idNumber || "") ||
+      address !== (originalData.address || "")
+    );
+  };
+
+  const validateForm = () => {
+    // Basic email validation only if email is provided
+    if (email.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        Alert.alert("Validation Error", "Please enter a valid email address");
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  const handleSave = async () => {
+    if (!validateForm()) return;
+
+    if (!hasChanges()) {
+      Alert.alert("No Changes", "No changes were made to your profile");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const updateData = {
+        fullName: fullName.trim() || undefined,
+        email: email.trim() || undefined,
+        idNumber: idNumber.trim() || undefined,
+        address: address.trim() || undefined,
+      };
+
+      await authService.updateProfile(updateData);
+
+      Alert.alert("Success", "Profile updated successfully!", [
+        {
+          text: "OK",
+          onPress: () => router.back(),
+        },
+      ]);
+    } catch (error: any) {
+      console.error("Error updating profile:", error);
+      const errorMessage =
+        error.response?.data?.message || "Failed to update profile";
+      Alert.alert("Error", errorMessage);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    if (hasChanges()) {
+      Alert.alert(
+        "Discard Changes",
+        "You have unsaved changes. Are you sure you want to go back?",
+        [
+          {
+            text: "Stay",
+            style: "cancel",
+          },
+          {
+            text: "Discard",
+            style: "destructive",
+            onPress: () => router.back(),
+          },
+        ]
+      );
+    } else {
+      router.back();
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#007ef2" />
+      </View>
+    );
+  }
+
+  return (
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+    >
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={handleCancel}
+          disabled={saving}
+        >
+          <ArrowLeft size={24} color="#007ef2" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Edit Profile</Text>
+        <View style={styles.placeholder} />
+      </View>
+
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.formContainer}>
+          <Text style={styles.subtitle}>Update your personal information</Text>
+
+          {/* Full Name */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Full Name</Text>
+            <TextInput
+              style={styles.input}
+              value={fullName}
+              onChangeText={setFullName}
+              placeholder="Enter your full name"
+              placeholderTextColor="#999"
+              autoCapitalize="words"
+              editable={!saving}
+            />
+          </View>
+
+          {/* Email */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Email Address</Text>
+            <TextInput
+              style={styles.input}
+              value={email}
+              onChangeText={setEmail}
+              placeholder="Enter your email"
+              placeholderTextColor="#999"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              editable={!saving}
+            />
+          </View>
+
+          {/* ID Number */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>ID Number</Text>
+            <TextInput
+              style={styles.input}
+              value={idNumber}
+              onChangeText={setIdNumber}
+              placeholder="Enter your ID number"
+              placeholderTextColor="#999"
+              editable={!saving}
+            />
+          </View>
+
+          {/* Address */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Address</Text>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              value={address}
+              onChangeText={setAddress}
+              placeholder="Enter your address"
+              placeholderTextColor="#999"
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+              editable={!saving}
+            />
+          </View>
+
+          {/* Save Button */}
+          <TouchableOpacity
+            style={[
+              styles.saveButton,
+              (!hasChanges() || saving) && styles.saveButtonDisabled,
+            ]}
+            onPress={handleSave}
+            disabled={!hasChanges() || saving}
+          >
+            {saving ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <>
+                <Save size={20} color="#fff" />
+                <Text style={styles.saveButtonText}>Save Changes</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.bottomSpacing} />
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#f5fafe",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f5fafe",
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingTop: 60,
+    paddingBottom: 20,
+    backgroundColor: "#fff",
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(0, 126, 242, 0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontFamily: "OpenSans_700Bold",
+    color: "#333",
+  },
+  placeholder: {
+    width: 40,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 20,
+  },
+  formContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 24,
+  },
+  subtitle: {
+    fontSize: 14,
+    fontFamily: "Roboto",
+    color: "#666",
+    marginBottom: 24,
+  },
+  inputGroup: {
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 14,
+    fontFamily: "Roboto_500Medium",
+    color: "#333",
+    marginBottom: 8,
+  },
+  input: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    fontFamily: "Roboto",
+    color: "#333",
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  textArea: {
+    height: 100,
+    paddingTop: 16,
+  },
+  saveButton: {
+    backgroundColor: "#007ef2",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 18,
+    borderRadius: 16,
+    gap: 10,
+    shadowColor: "#007ef2",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  saveButtonDisabled: {
+    backgroundColor: "#ccc",
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  saveButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontFamily: "Roboto_700Bold",
+  },
+  bottomSpacing: {
+    height: 100,
+  },
+});

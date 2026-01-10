@@ -36,6 +36,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 12,
     marginVertical: 12,
+    marginHorizontal: 20,
   },
   button: {
     flexDirection: "row",

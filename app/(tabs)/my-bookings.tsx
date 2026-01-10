@@ -1,10 +1,5 @@
-import { Calendar } from 'lucide-react-native';
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Calendar } from "lucide-react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 
 export default function MyBookingsScreen() {
   // Mock data - will be replaced with actual API calls
@@ -23,7 +18,8 @@ export default function MyBookingsScreen() {
           <Calendar size={80} color="#ccc" />
           <Text style={styles.emptyTitle}>No Bookings Yet</Text>
           <Text style={styles.emptyMessage}>
-            You haven't made any bookings yet. Start exploring hotels and make your first booking!
+            You haven't made any bookings yet. Start exploring hotels and make
+            your first booking!
           </Text>
         </View>
       ) : (
@@ -38,37 +34,37 @@ export default function MyBookingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5fafe',
+    backgroundColor: "#f5fafe",
   },
   header: {
     paddingHorizontal: 20,
-    paddingTop: 60,
+    paddingTop: 20,
     paddingBottom: 20,
   },
   headerTitle: {
     fontSize: 28,
-    fontFamily: 'OpenSans_700Bold',
-    color: '#007ef2',
+    fontFamily: "OpenSans_700Bold",
+    color: "#007ef2",
   },
   emptyState: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: 40,
     paddingTop: 100,
   },
   emptyTitle: {
     fontSize: 24,
-    fontFamily: 'OpenSans_700Bold',
-    color: '#333',
+    fontFamily: "OpenSans_700Bold",
+    color: "#333",
     marginTop: 20,
     marginBottom: 10,
   },
   emptyMessage: {
     fontSize: 16,
-    fontFamily: 'Roboto',
-    color: '#666',
-    textAlign: 'center',
+    fontFamily: "Roboto",
+    color: "#666",
+    textAlign: "center",
     lineHeight: 24,
   },
   bookingsList: {
