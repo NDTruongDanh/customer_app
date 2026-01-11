@@ -1,7 +1,6 @@
-import { authService } from "@/src/api";
+import { useLogin } from "@/src/hooks";
 import { showAlert } from "@/src/utils/alert";
 import { MaterialIcons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { Eye, EyeOff, Lock, Phone } from "lucide-react-native";
 import { useState } from "react";
@@ -21,45 +20,31 @@ export default function LoginScreen() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
 
-  const handleLogin = async () => {
+  const loginMutation = useLogin();
+
+  const handleLogin = () => {
     if (!phone || !password) {
       showAlert("Error", "Please enter both phone and password");
       return;
     }
 
-    setLoading(true);
-    try {
-      const response = await authService.login(phone, password);
-
-      // Store tokens securely - response has nested structure { data: { customer, tokens } }
-      await AsyncStorage.setItem(
-        "accessToken",
-        response.data.tokens.access.token
-      );
-      await AsyncStorage.setItem(
-        "refreshToken",
-        response.data.tokens.refresh.token
-      );
-
-      // Store customer data
-      await AsyncStorage.setItem(
-        "userData",
-        JSON.stringify(response.data.customer)
-      );
-
-      showAlert("Success", "Logged in successfully!");
-      router.replace("/(tabs)/home");
-    } catch (error: any) {
-      console.error("Login error:", error);
-      const errorMessage =
-        error.response?.data?.message ||
-        "Login failed. Please check your credentials.";
-      showAlert("Login Failed", errorMessage);
-    } finally {
-      setLoading(false);
-    }
+    loginMutation.mutate(
+      { phone, password },
+      {
+        onSuccess: () => {
+          showAlert("Success", "Logged in successfully!");
+          router.replace("/(tabs)/home");
+        },
+        onError: (error: any) => {
+          console.error("Login error:", error);
+          const errorMessage =
+            error.response?.data?.message ||
+            "Login failed. Please check your credentials.";
+          showAlert("Login Failed", errorMessage);
+        },
+      }
+    );
   };
 
   const handleGoogleLogin = () => {
@@ -149,11 +134,14 @@ export default function LoginScreen() {
 
           {/* Login Button */}
           <Pressable
-            style={[styles.loginButton, loading && styles.loginButtonDisabled]}
+            style={[
+              styles.loginButton,
+              loginMutation.isPending && styles.loginButtonDisabled,
+            ]}
             onPress={handleLogin}
-            disabled={loading}
+            disabled={loginMutation.isPending}
           >
-            {loading ? (
+            {loginMutation.isPending ? (
               <ActivityIndicator color="#fff" />
             ) : (
               <Text style={styles.loginButtonText}>Login</Text>

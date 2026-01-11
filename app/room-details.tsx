@@ -1,6 +1,5 @@
-import { roomService } from "@/src/api";
 import { useCart } from "@/src/context/CartContext";
-import type { Room } from "@/src/types";
+import { useRoomDetails } from "@/src/hooks";
 import { showAlert } from "@/src/utils/alert";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
@@ -15,7 +14,7 @@ import {
   Share2,
   ShoppingCart,
 } from "lucide-react-native";
-import { useCallback, useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   ScrollView,
@@ -30,9 +29,23 @@ export default function RoomDetailsScreen() {
   const params = useLocalSearchParams();
   const roomId = params.id as string;
 
-  const [room, setRoom] = useState<Room | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Use TanStack Query for room details
+  const {
+    data: roomResponse,
+    isLoading,
+    error: roomError,
+    refetch,
+  } = useRoomDetails(roomId);
+
+  const room = roomResponse?.data ?? null;
+
+  // Format error message
+  const error = useMemo(() => {
+    if (!roomError) return null;
+    const err = roomError as any;
+    return err.response?.data?.message || "Failed to load room details";
+  }, [roomError]);
+
   const [isFavorite, setIsFavorite] = useState(false);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const [checkInDate, setCheckInDate] = useState<Date | null>(
@@ -45,26 +58,6 @@ export default function RoomDetailsScreen() {
 
   const { addToCart, isInCart } = useCart();
   const roomInCart = room ? isInCart(room.id) : false;
-
-  const fetchRoomDetails = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const response = await roomService.getRoomDetails(roomId);
-      setRoom(response.data);
-    } catch (err: any) {
-      console.error("Error fetching room details:", err);
-      setError(err.response?.data?.message || "Failed to load room details");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [roomId]);
-
-  useEffect(() => {
-    if (roomId) {
-      fetchRoomDetails();
-    }
-  }, [roomId, fetchRoomDetails]);
 
   const handleAddToCart = () => {
     if (!room) return;
@@ -123,7 +116,7 @@ export default function RoomDetailsScreen() {
     return (
       <View style={styles.errorContainer}>
         <Text style={styles.errorText}>{error || "Room not found"}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={fetchRoomDetails}>
+        <TouchableOpacity style={styles.retryButton} onPress={() => refetch()}>
           <Text style={styles.retryButtonText}>Retry</Text>
         </TouchableOpacity>
       </View>

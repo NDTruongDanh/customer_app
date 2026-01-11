@@ -1,8 +1,7 @@
-import { authService } from "@/src/api";
+import { useRegister } from "@/src/hooks";
 import type { RegisterData } from "@/src/types";
 import { showAlert } from "@/src/utils/alert";
 import { MaterialIcons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { Eye, EyeOff, Lock, Mail, Phone, User } from "lucide-react-native";
 import { useState } from "react";
@@ -29,9 +28,10 @@ export default function SignupScreen() {
   const [phone, setPhone] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
 
-  const handleContinue = async () => {
+  const registerMutation = useRegister();
+
+  const handleContinue = () => {
     if (!fullName || !email || !password || !confirmPassword || !phone) {
       showAlert("Error", "Please fill in all required fields");
       return;
@@ -50,52 +50,34 @@ export default function SignupScreen() {
       return;
     }
 
-    setLoading(true);
-    try {
-      const registerData: RegisterData = {
-        fullName: fullName,
-        phone: phone,
-        email,
-        password,
-      };
+    const registerData: RegisterData = {
+      fullName: fullName,
+      phone: phone,
+      email,
+      password,
+    };
 
-      const response = await authService.register(registerData);
+    registerMutation.mutate(registerData, {
+      onSuccess: () => {
+        showAlert("Success", "Account created successfully!");
+        router.replace("/(tabs)/home");
+      },
+      onError: (error: any) => {
+        console.error("Signup error:", error);
 
-      // Store tokens securely - response has nested structure { data: { customer, tokens } }
-      await AsyncStorage.setItem(
-        "accessToken",
-        response.data.tokens.access.token
-      );
-      await AsyncStorage.setItem(
-        "refreshToken",
-        response.data.tokens.refresh.token
-      );
-
-      // Store customer data
-      await AsyncStorage.setItem(
-        "userData",
-        JSON.stringify(response.data.customer)
-      );
-
-      showAlert("Success", "Account created successfully!");
-      router.replace("/(tabs)/home");
-    } catch (error: any) {
-      console.error("Signup error:", error);
-
-      // Handle validation errors
-      if (error.response?.data?.errors) {
-        const validationErrors = error.response.data.errors
-          .map((e: any) => `${e.field}: ${e.message}`)
-          .join("\n");
-        showAlert("Validation Error", validationErrors);
-      } else {
-        const errorMessage =
-          error.response?.data?.message || "Signup failed. Please try again.";
-        showAlert("Signup Failed", errorMessage);
-      }
-    } finally {
-      setLoading(false);
-    }
+        // Handle validation errors
+        if (error.response?.data?.errors) {
+          const validationErrors = error.response.data.errors
+            .map((e: any) => `${e.field}: ${e.message}`)
+            .join("\n");
+          showAlert("Validation Error", validationErrors);
+        } else {
+          const errorMessage =
+            error.response?.data?.message || "Signup failed. Please try again.";
+          showAlert("Signup Failed", errorMessage);
+        }
+      },
+    });
   };
 
   const handleGoogleSignup = () => {
@@ -233,12 +215,12 @@ export default function SignupScreen() {
               <Pressable
                 style={[
                   styles.continueButton,
-                  loading && styles.continueButtonDisabled,
+                  registerMutation.isPending && styles.continueButtonDisabled,
                 ]}
                 onPress={handleContinue}
-                disabled={loading}
+                disabled={registerMutation.isPending}
               >
-                {loading ? (
+                {registerMutation.isPending ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
                   <Text style={styles.continueButtonText}>Continue</Text>

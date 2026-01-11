@@ -1,7 +1,5 @@
-import { authService } from "@/src/api";
-import type { Customer } from "@/src/types";
+import { useLogout, useProfile } from "@/src/hooks";
 import { showAlert, showConfirm } from "@/src/utils/alert";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import {
   CreditCard,
@@ -12,7 +10,6 @@ import {
   Phone,
   User as UserIcon,
 } from "lucide-react-native";
-import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   RefreshControl,
@@ -25,31 +22,22 @@ import {
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const [profile, setProfile] = useState<Customer | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [loggingOut, setLoggingOut] = useState(false);
 
-  useEffect(() => {
-    loadUserProfile();
-  }, []);
+  // Use TanStack Query for profile data
+  const {
+    data: profileResponse,
+    isLoading: loading,
+    refetch,
+    isRefetching: refreshing,
+  } = useProfile();
 
-  const loadUserProfile = async () => {
-    try {
-      const response = await authService.getProfile();
-      setProfile(response.data);
-    } catch (error) {
-      console.error("Error loading user profile:", error);
-      showAlert("Error", "Failed to load profile data");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const profile = profileResponse?.data ?? null;
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadUserProfile();
-    setRefreshing(false);
+  // Use TanStack Query for logout
+  const logoutMutation = useLogout();
+
+  const onRefresh = () => {
+    refetch();
   };
 
   const handleLogout = async () => {
@@ -62,34 +50,16 @@ export default function ProfileScreen() {
 
     if (!confirmed) return;
 
-    setLoggingOut(true);
-    try {
-      const refreshToken = await AsyncStorage.getItem("refreshToken");
-
-      if (refreshToken) {
-        await authService.logout(refreshToken);
-      }
-
-      // Clear all stored data
-      await AsyncStorage.removeItem("accessToken");
-      await AsyncStorage.removeItem("refreshToken");
-      await AsyncStorage.removeItem("userData");
-
-      showAlert("Success", "Logged out successfully!");
-      router.replace("/welcome");
-    } catch (error: any) {
-      console.error("Logout error:", error);
-
-      // Clear tokens even if API call fails
-      await AsyncStorage.removeItem("accessToken");
-      await AsyncStorage.removeItem("refreshToken");
-      await AsyncStorage.removeItem("userData");
-
-      showAlert("Logged Out", "You have been logged out.");
-      router.replace("/welcome");
-    } finally {
-      setLoggingOut(false);
-    }
+    logoutMutation.mutate(undefined, {
+      onSuccess: () => {
+        showAlert("Success", "Logged out successfully!");
+        router.replace("/welcome");
+      },
+      onError: () => {
+        showAlert("Logged Out", "You have been logged out.");
+        router.replace("/welcome");
+      },
+    });
   };
 
   if (loading) {
@@ -223,9 +193,9 @@ export default function ProfileScreen() {
         <TouchableOpacity
           style={styles.logoutButton}
           onPress={handleLogout}
-          disabled={loggingOut}
+          disabled={logoutMutation.isPending}
         >
-          {loggingOut ? (
+          {logoutMutation.isPending ? (
             <ActivityIndicator color="#fff" />
           ) : (
             <>

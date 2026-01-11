@@ -1,14 +1,13 @@
-import { roomService } from "@/src/api";
 import BusinessCard from "@/src/components/home/BusinessCard";
 import DateGuestSelector from "@/src/components/home/DateGuestSelector";
 import DateRangePicker from "@/src/components/home/DateRangePicker";
 import FilterButton from "@/src/components/home/FilterButton";
 import RoomCard from "@/src/components/home/RoomCard";
 import SearchBar from "@/src/components/home/SearchBar";
-import type { Room } from "@/src/types";
+import { useRooms } from "@/src/hooks";
 import { useRouter } from "expo-router";
 import { Bell } from "lucide-react-native";
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   ScrollView,
@@ -27,53 +26,41 @@ export default function HomeScreen() {
   const [checkInDate, setCheckInDate] = useState<Date | undefined>();
   const [checkOutDate, setCheckOutDate] = useState<Date | undefined>();
 
-  // Rooms state
-  const [rooms, setRooms] = useState<Room[]>([]);
-  const [isLoadingRooms, setIsLoadingRooms] = useState(false);
-  const [roomsError, setRoomsError] = useState<string | null>(null);
-
-  // Fetch rooms when dates change
-  useEffect(() => {
-    if (checkInDate && checkOutDate) {
-      fetchRooms();
-    }
+  // Build search params for rooms query
+  const searchParams = useMemo(() => {
+    if (!checkInDate || !checkOutDate) return undefined;
+    return {
+      page: 1,
+      limit: 10,
+      checkInDate: checkInDate.toISOString().split("T")[0],
+      checkOutDate: checkOutDate.toISOString().split("T")[0],
+    };
   }, [checkInDate, checkOutDate]);
 
-  const fetchRooms = async () => {
-    if (!checkInDate || !checkOutDate) return;
-    try {
-      setIsLoadingRooms(true);
-      setRoomsError(null);
+  // Use TanStack Query for rooms - enabled only when dates are selected
+  const {
+    data: roomsResponse,
+    isLoading: isLoadingRooms,
+    error: roomsQueryError,
+    refetch: refetchRooms,
+  } = useRooms(searchParams, { enabled: !!searchParams });
 
-      const response = await roomService.getRooms({
-        page: 1,
-        limit: 10,
-        checkInDate: checkInDate.toISOString().split("T")[0],
-        checkOutDate: checkOutDate.toISOString().split("T")[0],
-      });
-      setRooms(response.data.data);
-    } catch (error: any) {
-      console.error("Error fetching rooms:", error);
-      console.error("Error response:", error.response?.data);
-      console.error("Error status:", error.response?.status);
+  // Extract rooms from grouped data structure
+  // API returns: { data: { data: [{ roomType, availableCount, rooms: Room[] }] } }
+  const roomGroups = roomsResponse?.data?.data ?? [];
+  const rooms = roomGroups.flatMap((group: any) => group.rooms ?? []);
 
-      let errorMessage = "Failed to load rooms. Please try again.";
-
-      // Check for authentication error
-      if (
-        error.response?.status === 401 ||
-        error.response?.data?.code === 401
-      ) {
-        errorMessage = "Please login to view available rooms.";
-      } else if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      }
-
-      setRoomsError(errorMessage);
-    } finally {
-      setIsLoadingRooms(false);
+  // Format error message
+  const roomsError = useMemo(() => {
+    if (!roomsQueryError) return null;
+    const error = roomsQueryError as any;
+    if (error.response?.status === 401 || error.response?.data?.code === 401) {
+      return "Please login to view available rooms.";
     }
-  };
+    return (
+      error.response?.data?.message || "Failed to load rooms. Please try again."
+    );
+  }, [roomsQueryError]);
 
   const businessAccommodates = [
     {
@@ -133,12 +120,16 @@ export default function HomeScreen() {
   };
 
   const handleRoomPress = (id: string) => {
+    if (!id) {
+      console.error("Room ID is missing");
+      return;
+    }
     router.push({
       pathname: "/room-details",
       params: {
         id,
-        checkInDate: checkInDate ? checkInDate.toISOString() : undefined,
-        checkOutDate: checkOutDate ? checkOutDate.toISOString() : undefined,
+        checkInDate: checkInDate?.toISOString(),
+        checkOutDate: checkOutDate?.toISOString(),
       },
     });
   };
@@ -192,7 +183,10 @@ export default function HomeScreen() {
       ) : roomsError ? (
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{roomsError}</Text>
-          <TouchableOpacity onPress={fetchRooms} style={styles.retryButton}>
+          <TouchableOpacity
+            onPress={() => refetchRooms()}
+            style={styles.retryButton}
+          >
             <Text style={styles.retryText}>Retry</Text>
           </TouchableOpacity>
         </View>

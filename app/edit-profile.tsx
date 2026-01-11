@@ -1,4 +1,4 @@
-import { authService } from "@/src/api";
+import { useProfile, useUpdateProfile } from "@/src/hooks";
 import type { Customer } from "@/src/types";
 import { useRouter } from "expo-router";
 import { ArrowLeft, Save } from "lucide-react-native";
@@ -18,8 +18,10 @@ import {
 
 export default function EditProfileScreen() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+
+  // Use TanStack Query for profile data
+  const { data: profileResponse, isLoading: loading } = useProfile();
+  const updateProfileMutation = useUpdateProfile();
 
   // Form state
   const [fullName, setFullName] = useState("");
@@ -30,27 +32,17 @@ export default function EditProfileScreen() {
   // Original data for comparison
   const [originalData, setOriginalData] = useState<Customer | null>(null);
 
+  // Sync form state when profile data loads
   useEffect(() => {
-    loadProfile();
-  }, []);
-
-  const loadProfile = async () => {
-    try {
-      const response = await authService.getProfile();
-      const profile = response.data;
-
+    if (profileResponse?.data) {
+      const profile = profileResponse.data;
       setOriginalData(profile);
       setFullName(profile.fullName || "");
       setEmail(profile.email || "");
       setIdNumber(profile.idNumber || "");
       setAddress(profile.address || "");
-    } catch (error) {
-      console.error("Error loading profile:", error);
-      Alert.alert("Error", "Failed to load profile data");
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [profileResponse]);
 
   const hasChanges = () => {
     if (!originalData) return false;
@@ -75,7 +67,7 @@ export default function EditProfileScreen() {
     return true;
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!validateForm()) return;
 
     if (!hasChanges()) {
@@ -83,31 +75,33 @@ export default function EditProfileScreen() {
       return;
     }
 
-    setSaving(true);
-    try {
-      const updateData = {
-        fullName: fullName.trim() || undefined,
-        email: email.trim() || undefined,
-        idNumber: idNumber.trim() || undefined,
-        address: address.trim() || undefined,
-      };
+    const updateData = {
+      fullName: fullName.trim() || undefined,
+      email: email.trim() || undefined,
+      idNumber: idNumber.trim() || undefined,
+      address: address.trim() || undefined,
+    };
 
-      await authService.updateProfile(updateData);
-
-      Alert.alert("Success", "Profile updated successfully!", [
-        {
-          text: "OK",
-          onPress: () => router.back(),
-        },
-      ]);
-    } catch (error: any) {
-      console.error("Error updating profile:", error);
-      const errorMessage =
-        error.response?.data?.message || "Failed to update profile";
-      Alert.alert("Error", errorMessage);
-    } finally {
-      setSaving(false);
-    }
+    updateProfileMutation.mutate(updateData, {
+      onSuccess: () => {
+        Alert.alert("Success", "Profile updated successfully!", [
+          {
+            text: "OK",
+            onPress: () => router.back(),
+          },
+        ]);
+        // Auto-redirect after a short delay to ensure alert is shown
+        setTimeout(() => {
+          router.back();
+        }, 500);
+      },
+      onError: (error: any) => {
+        console.error("Error updating profile:", error);
+        const errorMessage =
+          error.response?.data?.message || "Failed to update profile";
+        Alert.alert("Error", errorMessage);
+      },
+    });
   };
 
   const handleCancel = () => {
@@ -131,6 +125,8 @@ export default function EditProfileScreen() {
       router.back();
     }
   };
+
+  const saving = updateProfileMutation.isPending;
 
   if (loading) {
     return (
