@@ -5,7 +5,10 @@
 
 import { useCart } from "@/src/context/CartContext";
 import bookingService from "@/src/services/booking.service";
+import paymentService from "@/src/services/payment.service";
 import type { CreateBookingRequest } from "@/src/types/booking.types";
+import type { VnpayPaymentRequest } from "@/src/types/payment.types";
+import { openVnpayPayment, showPaymentResult } from "@/src/utils/vnpay";
 import { useRouter } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
 import { useState } from "react";
@@ -63,7 +66,7 @@ export default function BookingSummaryScreen() {
     setIsLoading(true);
 
     try {
-      // Prepare the booking request
+      // Step 1: Create the booking
       const bookingRequest: CreateBookingRequest = {
         rooms: cartItems.map((item) => ({
           roomId: item.room.id,
@@ -76,39 +79,73 @@ export default function BookingSummaryScreen() {
         ),
       };
 
-      // Log the request for debugging
       console.log(
         "Booking request payload:",
         JSON.stringify(bookingRequest, null, 2)
       );
 
-      // Call the booking API
-      const response = await bookingService.createBooking(bookingRequest);
-
-      // Success! Clear the cart and show success message
-      clearCart();
-
-      Alert.alert(
-        "Booking Successful!",
-        `Your booking has been created successfully.\n\nBooking Code: ${
-          response.data.bookingCode
-        }\nTotal Amount: ${response.data.totalAmount.toLocaleString(
-          "en-US"
-        )} VND\n\nPlease complete payment before ${formatDate(
-          new Date(response.data.expiresAt)
-        )}.`,
-        [
-          {
-            text: "OK",
-            onPress: () => {
-              // Navigate to bookings list or home
-              router.push("/(tabs)/home");
-            },
-          },
-        ]
+      const bookingResponse = await bookingService.createBooking(
+        bookingRequest
       );
+
+      console.log("Booking created successfully:", bookingResponse.data);
+
+      // Step 2: Create VNPAY payment URL
+      const paymentRequest: VnpayPaymentRequest = {
+        bookingId: bookingResponse.data.bookingId,
+        amount: bookingResponse.data.totalAmount,
+        orderInfo: `Thanh toan dat phong ${bookingResponse.data.bookingCode}`,
+        returnUrl: "http://success.sdk.merchantbackapp", // SUCCESS URL per VNPAY SDK spec
+        locale: "vn",
+      };
+
+      console.log("Creating VNPAY payment URL...");
+      const paymentResponse = await paymentService.createVnpayPayment(
+        paymentRequest
+      );
+
+      console.log("Payment URL created:", paymentResponse.data.paymentUrl);
+
+      // Step 3: Open VNPAY payment screen
+      setIsLoading(false); // Hide loading before showing payment screen
+
+      const paymentResult = await openVnpayPayment(
+        paymentResponse.data.paymentUrl
+      );
+
+      console.log("Payment result:", paymentResult);
+
+      // Step 4: Handle payment result
+      if (paymentResult.resultCode === 0) {
+        // Payment successful
+        clearCart();
+
+        showPaymentResult(paymentResult, () => {
+          // Navigate to bookings list
+          router.push("/(tabs)/my-bookings");
+        });
+      } else {
+        // Payment failed or cancelled
+        showPaymentResult(paymentResult, undefined, () => {
+          // Stay on booking summary - user can try again
+          Alert.alert(
+            "Thanh toán chưa hoàn tất",
+            "Đặt phòng của bạn đã được tạo nhưng chưa thanh toán. Vui lòng hoàn tất thanh toán trong thời gian quy định.",
+            [
+              {
+                text: "Xem đặt phòng",
+                onPress: () => router.push("/(tabs)/my-bookings"),
+              },
+              {
+                text: "Thử lại",
+                style: "cancel",
+              },
+            ]
+          );
+        });
+      }
     } catch (error: any) {
-      console.error("Booking error:", error);
+      console.error("Booking/Payment error:", error);
       console.error("Error response:", error.response?.data);
       console.error("Error status:", error.response?.status);
 
@@ -116,9 +153,9 @@ export default function BookingSummaryScreen() {
         error.response?.data?.message ||
         error.response?.data?.error ||
         error.message ||
-        "Unable to create booking. Please try again.";
+        "Unable to create booking or process payment. Please try again.";
 
-      Alert.alert("Booking Failed", errorMessage);
+      Alert.alert("Error", errorMessage);
     } finally {
       setIsLoading(false);
     }
