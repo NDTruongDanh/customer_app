@@ -36,8 +36,7 @@ export default function CartScreen() {
   };
 
   const handleProceedToCheckout = () => {
-    // TODO: Navigate to checkout screen
-    console.log("Proceeding to checkout with items:", cartItems);
+    router.push("/booking-summary");
   };
 
   const handleClearCart = () => {
