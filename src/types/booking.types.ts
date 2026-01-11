@@ -3,9 +3,6 @@
  * Types for booking-related API requests and responses
  */
 
-/**
- * Booking Creation Request
- */
 export interface CreateBookingRequest {
   rooms: Array<{ roomId: string }>;
   checkInDate: string; // ISO 8601 format
@@ -13,9 +10,6 @@ export interface CreateBookingRequest {
   totalGuests: number;
 }
 
-/**
- * Booking Creation Response
- */
 export interface CreateBookingResponse {
   data: {
     bookingId: string;
@@ -25,12 +19,81 @@ export interface CreateBookingResponse {
   };
 }
 
-/**
- * Booking Status
- */
 export type BookingStatus =
   | "PENDING"
   | "CONFIRMED"
   | "CHECKED_IN"
   | "CHECKED_OUT"
   | "CANCELLED";
+
+export interface BookingSearchParams {
+  page?: number;
+  limit?: number;
+  status?: BookingStatus;
+}
+
+export interface BookingCustomer {
+  id: string;
+  fullName: string;
+  phone: string;
+  email: string;
+}
+
+export interface BookingRoomType {
+  id: string;
+  name: string;
+  capacity: number;
+  totalBed: number;
+  basePrice: string;
+  imageUrl?: string | null;
+}
+
+export interface BookingRoomInfo {
+  id: string;
+  roomNumber: string;
+  floor: number;
+  code: string;
+  status: string;
+}
+
+export interface BookingRoom {
+  id: string;
+  bookingId: string;
+  roomId: string;
+  roomTypeId: string;
+  checkInDate: string;
+  checkOutDate: string;
+  pricePerNight: string;
+  totalAmount: string;
+  status: BookingStatus;
+  room: BookingRoomInfo;
+  roomType: BookingRoomType;
+}
+
+export interface Booking {
+  id: string;
+  bookingCode: string;
+  status: BookingStatus;
+  primaryCustomerId: string;
+  checkInDate: string;
+  checkOutDate: string;
+  totalGuests: number;
+  totalAmount: string;
+  depositRequired: string;
+  createdAt: string;
+  updatedAt: string;
+  primaryCustomer: BookingCustomer;
+  bookingRooms: BookingRoom[];
+}
+
+export interface GetBookingsResponse {
+  data: {
+    data: Booking[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  };
+}

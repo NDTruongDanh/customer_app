@@ -28,6 +28,7 @@ export default function RoomDetailsScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const roomId = params.id as string;
+  const hideBottomBar = params.hideBottomBar === "true";
 
   // Use TanStack Query for room details
   const {
@@ -367,23 +368,32 @@ export default function RoomDetailsScreen() {
       </ScrollView>
 
       {/* Bottom Bar */}
-      <View style={styles.bottomBar}>
-        <View style={styles.priceInfo}>
-          <Text style={styles.priceAmount}>{formattedPrice} VND</Text>
-          <Text style={styles.priceUnit}>/night</Text>
+      {/* Bottom Bar */}
+      {!hideBottomBar && (
+        <View style={styles.bottomBar}>
+          <View style={styles.priceInfo}>
+            <Text style={styles.priceAmount}>{formattedPrice} VND</Text>
+            <Text style={styles.priceUnit}>/night</Text>
+          </View>
+          {roomInCart ? (
+            <TouchableOpacity
+              style={styles.cartButton}
+              onPress={handleGoToCart}
+            >
+              <ShoppingCart size={20} color="#fff" />
+              <Text style={styles.cartButtonText}>View Cart</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={handleAddToCart}
+            >
+              <ShoppingCart size={20} color="#fff" />
+              <Text style={styles.addButtonText}>Add to Cart</Text>
+            </TouchableOpacity>
+          )}
         </View>
-        {roomInCart ? (
-          <TouchableOpacity style={styles.cartButton} onPress={handleGoToCart}>
-            <ShoppingCart size={20} color="#fff" />
-            <Text style={styles.cartButtonText}>View Cart</Text>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity style={styles.addButton} onPress={handleAddToCart}>
-            <ShoppingCart size={20} color="#fff" />
-            <Text style={styles.addButtonText}>Add to Cart</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+      )}
     </View>
   );
 }

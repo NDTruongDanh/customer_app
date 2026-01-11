@@ -5,8 +5,10 @@
 
 import api from "../api/client";
 import type {
+  BookingSearchParams,
   CreateBookingRequest,
   CreateBookingResponse,
+  GetBookingsResponse,
 } from "../types/booking.types";
 
 /**
@@ -22,8 +24,21 @@ export const createBooking = async (
   return response.data;
 };
 
+/**
+ * Get current user's bookings
+ */
+export const getBookings = async (
+  params?: BookingSearchParams
+): Promise<GetBookingsResponse> => {
+  const response = await api.get<GetBookingsResponse>("/customer/bookings", {
+    params,
+  });
+  return response.data;
+};
+
 const bookingService = {
   createBooking,
+  getBookings,
 };
 
 export default bookingService;
