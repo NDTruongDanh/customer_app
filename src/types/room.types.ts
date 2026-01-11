@@ -85,6 +85,9 @@ export interface RoomSearchParams {
   minPrice?: number;
   maxPrice?: number;
   capacity?: number;
+  floor?: number;
+  minCapacity?: number;
+  maxCapacity?: number;
   checkInDate: string;
   checkOutDate: string;
 }

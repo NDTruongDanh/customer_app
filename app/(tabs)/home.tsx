@@ -2,6 +2,7 @@ import BusinessCard from "@/src/components/home/BusinessCard";
 import DateGuestSelector from "@/src/components/home/DateGuestSelector";
 import DateRangePicker from "@/src/components/home/DateRangePicker";
 import FilterButton from "@/src/components/home/FilterButton";
+import FilterModal, { FilterState } from "@/src/components/home/FilterModal";
 import RoomCard from "@/src/components/home/RoomCard";
 import SearchBar from "@/src/components/home/SearchBar";
 import { useRooms } from "@/src/hooks";
@@ -24,19 +25,35 @@ export default function HomeScreen() {
   const [dateRange, setDateRange] = useState("Select Dates");
   const [guests, setGuests] = useState(3);
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
+  const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [checkInDate, setCheckInDate] = useState<Date | undefined>();
   const [checkOutDate, setCheckOutDate] = useState<Date | undefined>();
+  const [filters, setFilters] = useState<FilterState>({
+    sortBy: "price_asc",
+    minPrice: 500000,
+    maxPrice: 5000000,
+  });
 
   // Build search params for rooms query
   const searchParams = useMemo(() => {
     if (!checkInDate || !checkOutDate) return undefined;
-    return {
+
+    const params: any = {
       page: 1,
       limit: 10,
       checkInDate: checkInDate.toISOString().split("T")[0],
       checkOutDate: checkOutDate.toISOString().split("T")[0],
+      minPrice: filters.minPrice,
+      maxPrice: filters.maxPrice,
     };
-  }, [checkInDate, checkOutDate]);
+
+    // Only include optional filters if they have values
+    if (filters.minCapacity) params.minCapacity = filters.minCapacity;
+    if (filters.maxCapacity) params.maxCapacity = filters.maxCapacity;
+    if (filters.floor && filters.floor > 0) params.floor = filters.floor;
+
+    return params;
+  }, [checkInDate, checkOutDate, filters]);
 
   // Use TanStack Query for rooms - enabled only when dates are selected
   const {
@@ -49,7 +66,24 @@ export default function HomeScreen() {
   // Extract rooms from grouped data structure
   // API returns: { data: { data: [{ roomType, availableCount, rooms: Room[] }] } }
   const roomGroups = roomsResponse?.data?.data ?? [];
-  const rooms = roomGroups.flatMap((group: any) => group.rooms ?? []);
+  let rooms = roomGroups.flatMap((group: any) => group.rooms ?? []);
+
+  // Apply client-side sorting
+  rooms = useMemo(() => {
+    const sortedRooms = [...rooms];
+    if (filters.sortBy === "price_asc") {
+      sortedRooms.sort(
+        (a, b) =>
+          parseFloat(a.roomType.basePrice) - parseFloat(b.roomType.basePrice)
+      );
+    } else if (filters.sortBy === "price_desc") {
+      sortedRooms.sort(
+        (a, b) =>
+          parseFloat(b.roomType.basePrice) - parseFloat(a.roomType.basePrice)
+      );
+    }
+    return sortedRooms;
+  }, [rooms, filters.sortBy]);
 
   // Format error message
   const roomsError = useMemo(() => {
@@ -116,8 +150,11 @@ export default function HomeScreen() {
   };
 
   const handleFilterPress = () => {
-    // TODO: Open filter modal
-    console.log("Open filter");
+    setIsFilterVisible(true);
+  };
+
+  const handleApplyFilters = (newFilters: FilterState) => {
+    setFilters(newFilters);
   };
 
   const handleRoomPress = (id: string) => {
@@ -236,6 +273,14 @@ export default function HomeScreen() {
           onSelectRange={handleDateRangeSelect}
           initialCheckIn={checkInDate}
           initialCheckOut={checkOutDate}
+        />
+
+        {/* Filter Modal */}
+        <FilterModal
+          visible={isFilterVisible}
+          onClose={() => setIsFilterVisible(false)}
+          onApply={handleApplyFilters}
+          initialFilters={filters}
         />
       </ScrollView>
     </SafeAreaView>
