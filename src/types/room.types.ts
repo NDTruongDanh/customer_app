@@ -33,7 +33,7 @@ export interface RoomType {
   name: string;
   capacity: number;
   totalBed: number;
-  pricePerNight: string;
+  basePrice: string;
   createdAt: string;
   updatedAt: string;
   roomTypeTags: RoomTypeTag[];
@@ -85,6 +85,6 @@ export interface RoomSearchParams {
   minPrice?: number;
   maxPrice?: number;
   capacity?: number;
-  checkIn?: string;
-  checkOut?: string;
+  checkInDate: string;
+  checkOutDate: string;
 }

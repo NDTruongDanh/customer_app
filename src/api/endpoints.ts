@@ -28,7 +28,7 @@ export const PROFILE_ENDPOINTS = {
  * Room Endpoints
  */
 export const ROOM_ENDPOINTS = {
-  SEARCH_ROOMS: "/customer/rooms",
+  SEARCH_ROOMS: "/customer/rooms/available",
   GET_ROOM_DETAILS: (roomId: string) => `/customer/rooms/${roomId}`,
 } as const;
 

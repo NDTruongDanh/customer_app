@@ -15,14 +15,14 @@ export default function RoomCard({
   onFavoritePress,
 }: RoomCardProps) {
   const { roomType, roomNumber, floor, status } = room;
-  const pricePerNight = parseFloat(roomType.pricePerNight);
+  const basePrice = parseFloat(roomType.basePrice);
   const [isAmenitiesExpanded, setIsAmenitiesExpanded] = useState(false);
 
   // Format price to display (divide by 1000 for K format if needed)
   const formattedPrice =
-    pricePerNight >= 1000
-      ? `${(pricePerNight / 1000).toFixed(0)}K`
-      : pricePerNight.toFixed(0);
+    basePrice >= 1000
+      ? `${(basePrice / 1000).toFixed(0)}K`
+      : basePrice.toFixed(0);
 
   // Get all amenities
   const allAmenities = roomType.roomTypeTags.map((tag) => tag.roomTag.name);

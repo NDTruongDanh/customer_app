@@ -1,13 +1,19 @@
 import { roomService } from "@/src/api";
+import { useCart } from "@/src/context/CartContext";
 import type { Room } from "@/src/types";
+import { showAlert } from "@/src/utils/alert";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   ArrowLeft,
+  Calendar,
   Heart,
   Mail,
   MapPin,
+  Minus,
   Phone,
+  Plus,
   Share2,
+  ShoppingCart,
 } from "lucide-react-native";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -29,6 +35,16 @@ export default function RoomDetailsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [isFavorite, setIsFavorite] = useState(false);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [checkInDate, setCheckInDate] = useState<Date | null>(
+    params.checkInDate ? new Date(params.checkInDate as string) : null
+  );
+  const [checkOutDate, setCheckOutDate] = useState<Date | null>(
+    params.checkOutDate ? new Date(params.checkOutDate as string) : null
+  );
+  const [numberOfGuests, setNumberOfGuests] = useState(1);
+
+  const { addToCart, isInCart } = useCart();
+  const roomInCart = room ? isInCart(room.id) : false;
 
   const fetchRoomDetails = useCallback(async () => {
     try {
@@ -50,10 +66,39 @@ export default function RoomDetailsScreen() {
     }
   }, [roomId, fetchRoomDetails]);
 
-  const handleBookNow = () => {
-    if (room) {
-      // TODO: Navigate to booking screen with room data when booking screen is created
-      console.log("Book room:", room.id);
+  const handleAddToCart = () => {
+    if (!room) return;
+
+    if (!checkInDate || !checkOutDate) {
+      showAlert("Missing Dates", "Please select check-in and check-out dates");
+      return;
+    }
+
+    if (checkInDate >= checkOutDate) {
+      showAlert("Invalid Dates", "Check-out date must be after check-in date");
+      return;
+    }
+
+    addToCart(room, checkInDate, checkOutDate, numberOfGuests);
+    showAlert(
+      "Added to Cart",
+      `${room.roomType.name} has been added to your cart`
+    );
+  };
+
+  const handleGoToCart = () => {
+    router.push("/(tabs)/cart");
+  };
+
+  const handleIncreaseGuests = () => {
+    if (room && numberOfGuests < room.roomType.capacity) {
+      setNumberOfGuests(numberOfGuests + 1);
+    }
+  };
+
+  const handleDecreaseGuests = () => {
+    if (numberOfGuests > 1) {
+      setNumberOfGuests(numberOfGuests - 1);
     }
   };
 
@@ -85,8 +130,8 @@ export default function RoomDetailsScreen() {
     );
   }
 
-  const pricePerNight = parseFloat(room.roomType.pricePerNight);
-  const formattedPrice = pricePerNight.toLocaleString("en-US");
+  const basePrice = parseFloat(room.roomType.basePrice);
+  const formattedPrice = basePrice.toLocaleString("en-US");
   const amenities =
     room.roomType.roomTypeTags?.map((tag) => tag.roomTag.name) || [];
 
@@ -203,6 +248,85 @@ export default function RoomDetailsScreen() {
             )}
           </View>
 
+          {/* Booking Details Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Booking Details</Text>
+
+            {/* Booking Dates Display */}
+            {checkInDate && checkOutDate && (
+              <View style={styles.datesDisplayContainer}>
+                <View style={styles.dateDisplayItem}>
+                  <Calendar size={16} color="#007ef2" />
+                  <View style={styles.dateDisplayText}>
+                    <Text style={styles.dateDisplayLabel}>Check-in</Text>
+                    <Text style={styles.dateDisplayValue}>
+                      {checkInDate.toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.dateDisplayItem}>
+                  <Calendar size={16} color="#007ef2" />
+                  <View style={styles.dateDisplayText}>
+                    <Text style={styles.dateDisplayLabel}>Check-out</Text>
+                    <Text style={styles.dateDisplayValue}>
+                      {checkOutDate.toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {/* Guest Selection */}
+            <View style={styles.guestSelectionContainer}>
+              <Text style={styles.guestLabel}>Number of Guests</Text>
+              <View style={styles.guestControl}>
+                <TouchableOpacity
+                  style={[
+                    styles.guestButton,
+                    numberOfGuests <= 1 && styles.guestButtonDisabled,
+                  ]}
+                  onPress={handleDecreaseGuests}
+                  disabled={numberOfGuests <= 1}
+                >
+                  <Minus
+                    size={18}
+                    color={numberOfGuests <= 1 ? "#ccc" : "#007ef2"}
+                  />
+                </TouchableOpacity>
+                <Text style={styles.guestValue}>{numberOfGuests}</Text>
+                <TouchableOpacity
+                  style={[
+                    styles.guestButton,
+                    room &&
+                      numberOfGuests >= room.roomType.capacity &&
+                      styles.guestButtonDisabled,
+                  ]}
+                  onPress={handleIncreaseGuests}
+                  disabled={
+                    room ? numberOfGuests >= room.roomType.capacity : false
+                  }
+                >
+                  <Plus
+                    size={18}
+                    color={
+                      room && numberOfGuests >= room.roomType.capacity
+                        ? "#ccc"
+                        : "#007ef2"
+                    }
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+
           {/* Amenities Section */}
           {amenities.length > 0 && (
             <View style={styles.section}>
@@ -251,13 +375,21 @@ export default function RoomDetailsScreen() {
 
       {/* Bottom Bar */}
       <View style={styles.bottomBar}>
-        <View style={styles.priceContainer}>
-          <Text style={styles.priceAmount}>{formattedPrice}₫</Text>
+        <View style={styles.priceInfo}>
+          <Text style={styles.priceAmount}>{formattedPrice} VND</Text>
           <Text style={styles.priceUnit}>/night</Text>
         </View>
-        <TouchableOpacity style={styles.bookButton} onPress={handleBookNow}>
-          <Text style={styles.bookButtonText}>BOOK NOW</Text>
-        </TouchableOpacity>
+        {roomInCart ? (
+          <TouchableOpacity style={styles.cartButton} onPress={handleGoToCart}>
+            <ShoppingCart size={20} color="#fff" />
+            <Text style={styles.cartButtonText}>View Cart</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity style={styles.addButton} onPress={handleAddToCart}>
+            <ShoppingCart size={20} color="#fff" />
+            <Text style={styles.addButtonText}>Add to Cart</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
@@ -538,6 +670,73 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  datesDisplayContainer: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: "#f5f9ff",
+    borderRadius: 8,
+  },
+  dateDisplayItem: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  dateDisplayText: {
+    flex: 1,
+  },
+  dateDisplayLabel: {
+    fontSize: 10,
+    color: "#7f7f7f",
+    marginBottom: 2,
+  },
+  dateDisplayValue: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#1a1a1a",
+  },
+  guestSelectionContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+  },
+  guestLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#1a1a1a",
+  },
+  guestControl: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+  },
+  guestButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#f0f7ff",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  guestButtonDisabled: {
+    backgroundColor: "#f5f5f5",
+  },
+  guestValue: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1a1a1a",
+    minWidth: 24,
+    textAlign: "center",
+  },
   bottomBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -548,29 +747,46 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "#e0e0e0",
   },
-  priceContainer: {
+  priceInfo: {
     flexDirection: "row",
     alignItems: "baseline",
   },
   priceAmount: {
-    fontSize: 16,
-    fontWeight: "bold",
+    fontSize: 20,
+    fontWeight: "700",
     color: "#007ef2",
   },
   priceUnit: {
     fontSize: 12,
-    color: "#666",
+    color: "#7f7f7f",
     marginLeft: 4,
   },
-  bookButton: {
+  addButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
     backgroundColor: "#007ef2",
-    paddingHorizontal: 40,
-    paddingVertical: 13,
+    paddingHorizontal: 24,
+    paddingVertical: 14,
     borderRadius: 10,
   },
-  bookButtonText: {
-    color: "rgba(255,255,255,0.88)",
-    fontSize: 18,
-    fontWeight: "600",
+  addButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  cartButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#34c759",
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 10,
+  },
+  cartButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
   },
 });

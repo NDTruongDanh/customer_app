@@ -25,7 +25,7 @@ window.onload = function() {
     },
     "servers": [
       {
-        "url": "https://room-master-dcdsfng4c7h7hwbg.eastasia-01.azurewebsites.net/v1",
+        "url": "http://localhost:8080/v1",
         "description": "Development server"
       }
     ],
@@ -141,6 +141,55 @@ window.onload = function() {
       }
     ],
     "paths": {
+      "/health": {
+        "get": {
+          "summary": "Health check endpoint",
+          "description": "Returns the current health status of the API server",
+          "tags": [
+            "Health"
+          ],
+          "responses": {
+            "200": {
+              "description": "API is healthy and running",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "status": {
+                        "type": "string",
+                        "example": "ok",
+                        "description": "Health status of the API"
+                      },
+                      "timestamp": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2026-01-10T03:14:05.575Z",
+                        "description": "Current server timestamp"
+                      },
+                      "uptime": {
+                        "type": "number",
+                        "example": 588.595360349,
+                        "description": "Server uptime in seconds"
+                      },
+                      "environment": {
+                        "type": "string",
+                        "example": "development",
+                        "enum": [
+                          "development",
+                          "production",
+                          "test"
+                        ],
+                        "description": "Current environment"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "/customer/auth/register": {
         "post": {
           "summary": "Customer registration",
@@ -571,22 +620,16 @@ window.onload = function() {
                       "items": {
                         "type": "object",
                         "required": [
-                          "roomTypeId",
-                          "count"
+                          "roomId"
                         ],
                         "properties": {
-                          "roomTypeId": {
+                          "roomId": {
                             "type": "string",
-                            "description": "ID of the room type"
-                          },
-                          "count": {
-                            "type": "integer",
-                            "minimum": 1,
-                            "description": "Number of rooms of this type"
+                            "description": "ID of the specific room to book"
                           }
                         }
                       },
-                      "description": "Array of room type requests"
+                      "description": "Array of room requests"
                     },
                     "checkInDate": {
                       "type": "string",
@@ -607,12 +650,13 @@ window.onload = function() {
                   "example": {
                     "rooms": [
                       {
-                        "roomTypeId": "room_type_id_1",
-                        "count": 2
+                        "roomId": "room_id_1"
                       },
                       {
-                        "roomTypeId": "room_type_id_2",
-                        "count": 1
+                        "roomId": "room_id_2"
+                      },
+                      {
+                        "roomId": "room_id_3"
                       }
                     ],
                     "checkInDate": "2025-12-25T14:00:00Z",
@@ -1037,8 +1081,8 @@ window.onload = function() {
       },
       "/customer/rooms": {
         "get": {
-          "summary": "Search available rooms",
-          "description": "Search and filter available rooms with pagination",
+          "summary": "Search rooms by current status",
+          "description": "Search rooms by current physical status. For booking, use /available endpoint instead.",
           "tags": [
             "Customer Rooms"
           ],
@@ -1074,11 +1118,79 @@ window.onload = function() {
             },
             {
               "in": "query",
+              "name": "page",
+              "schema": {
+                "type": "integer",
+                "default": 1
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "List of rooms"
+            },
+            "401": {
+              "description": "Unauthorized"
+            }
+          }
+        }
+      },
+      "/customer/rooms/available": {
+        "get": {
+          "summary": "Search rooms available for booking dates",
+          "description": "**Primary endpoint for room search before booking.**\nReturns rooms that have no overlapping bookings for the specified date range.\nResults are grouped by room type for easy display.\n",
+          "tags": [
+            "Customer Rooms"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "query",
+              "name": "checkInDate",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "description": "Check-in date (ISO format, e.g., 2026-01-15)"
+            },
+            {
+              "in": "query",
+              "name": "checkOutDate",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "description": "Check-out date (must be after checkInDate)"
+            },
+            {
+              "in": "query",
+              "name": "roomTypeId",
+              "schema": {
+                "type": "string"
+              },
+              "description": "Filter by room type ID"
+            },
+            {
+              "in": "query",
+              "name": "floor",
+              "schema": {
+                "type": "integer"
+              },
+              "description": "Filter by floor number"
+            },
+            {
+              "in": "query",
               "name": "minCapacity",
               "schema": {
                 "type": "integer"
               },
-              "description": "Minimum capacity"
+              "description": "Minimum room capacity"
             },
             {
               "in": "query",
@@ -1086,7 +1198,7 @@ window.onload = function() {
               "schema": {
                 "type": "integer"
               },
-              "description": "Maximum capacity"
+              "description": "Maximum room capacity"
             },
             {
               "in": "query",
@@ -1110,8 +1222,7 @@ window.onload = function() {
               "schema": {
                 "type": "integer",
                 "default": 1
-              },
-              "description": "Page number"
+              }
             },
             {
               "in": "query",
@@ -1119,16 +1230,213 @@ window.onload = function() {
               "schema": {
                 "type": "integer",
                 "default": 10
-              },
-              "description": "Items per page"
+              }
             }
           ],
           "responses": {
             "200": {
-              "description": "List of available rooms"
+              "description": "Available rooms grouped by room type",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "data": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "roomType": {
+                              "type": "object"
+                            },
+                            "availableCount": {
+                              "type": "integer"
+                            },
+                            "rooms": {
+                              "type": "array"
+                            }
+                          }
+                        }
+                      },
+                      "total": {
+                        "type": "integer"
+                      },
+                      "checkInDate": {
+                        "type": "string"
+                      },
+                      "checkOutDate": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Invalid date range"
             },
             "401": {
               "description": "Unauthorized"
+            }
+          }
+        }
+      },
+      "/customer/rooms/check-availability": {
+        "post": {
+          "summary": "Bulk check room availability",
+          "description": "Check if multiple rooms are available for a date range. Use before creating a booking.",
+          "tags": [
+            "Customer Rooms"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "roomIds",
+                    "checkInDate",
+                    "checkOutDate"
+                  ],
+                  "properties": {
+                    "roomIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Array of room IDs to check"
+                    },
+                    "checkInDate": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "checkOutDate": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Availability status for each room",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "allAvailable": {
+                        "type": "boolean"
+                      },
+                      "results": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "roomId": {
+                              "type": "string"
+                            },
+                            "roomNumber": {
+                              "type": "string"
+                            },
+                            "available": {
+                              "type": "boolean"
+                            },
+                            "reason": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Invalid request"
+            },
+            "401": {
+              "description": "Unauthorized"
+            }
+          }
+        }
+      },
+      "/customer/rooms/{roomId}/availability": {
+        "get": {
+          "summary": "Check single room availability",
+          "description": "Check if a specific room is available for a date range",
+          "tags": [
+            "Customer Rooms"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "roomId",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            },
+            {
+              "in": "query",
+              "name": "checkInDate",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            {
+              "in": "query",
+              "name": "checkOutDate",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Room availability with conflict details",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "available": {
+                        "type": "boolean"
+                      },
+                      "room": {
+                        "type": "object"
+                      },
+                      "conflictingBookings": {
+                        "type": "array"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "404": {
+              "description": "Room not found"
             }
           }
         }
@@ -1152,8 +1460,7 @@ window.onload = function() {
               "required": true,
               "schema": {
                 "type": "string"
-              },
-              "description": "Room ID"
+              }
             }
           ],
           "responses": {
@@ -1549,6 +1856,159 @@ window.onload = function() {
           }
         }
       },
+      "/employee/app-settings/{key}": {
+        "get": {
+          "summary": "Get app setting by key",
+          "tags": [
+            "Employee App Settings"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "key",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "App setting key (e.g., DEPOSIT_PERCENTAGE, CHECKIN_TIME, CHECKOUT_TIME)",
+              "example": "DEPOSIT_PERCENTAGE"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "App setting value",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean",
+                        "example": true
+                      },
+                      "data": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string",
+                            "example": "DEPOSIT_PERCENTAGE"
+                          },
+                          "value": {
+                            "type": "object",
+                            "description": "Setting value (structure varies by key)",
+                            "example": {
+                              "percentage": 50
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "404": {
+              "description": "Setting not found"
+            }
+          }
+        },
+        "put": {
+          "summary": "Update app setting by key",
+          "tags": [
+            "Employee App Settings"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "key",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "App setting key (e.g., DEPOSIT_PERCENTAGE, CHECKIN_TIME, CHECKOUT_TIME)",
+              "example": "DEPOSIT_PERCENTAGE"
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "value"
+                  ],
+                  "properties": {
+                    "value": {
+                      "type": "object",
+                      "description": "Setting value (structure varies by key)",
+                      "example": {
+                        "percentage": 30
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "App setting updated successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean",
+                        "example": true
+                      },
+                      "message": {
+                        "type": "string",
+                        "example": "App setting 'DEPOSIT_PERCENTAGE' updated successfully"
+                      },
+                      "data": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string",
+                            "example": "DEPOSIT_PERCENTAGE"
+                          },
+                          "value": {
+                            "type": "object",
+                            "example": {
+                              "percentage": 30
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "404": {
+              "description": "Setting not found"
+            }
+          }
+        }
+      },
       "/employee/auth/login": {
         "post": {
           "summary": "Employee login",
@@ -1932,6 +2392,107 @@ window.onload = function() {
           }
         }
       },
+      "/employee/auth/permissions": {
+        "get": {
+          "summary": "Get current employee permissions",
+          "description": "Returns the permissions for the authenticated employee's role.\nUse this to build UI elements:\n- `screens`: List of screens the employee can access (for sidebar menu)\n- `actions`: List of action permissions (for button visibility)\n- `permissions`: Raw CASL permissions (for frontend CASL instance)\n",
+          "tags": [
+            "Employee Auth"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Employee permissions retrieved successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "data": {
+                        "type": "object",
+                        "properties": {
+                          "role": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string",
+                                "example": "RECEPTIONIST"
+                              },
+                              "description": {
+                                "type": "string",
+                                "example": "Front desk operations"
+                              }
+                            }
+                          },
+                          "screens": {
+                            "type": "array",
+                            "description": "Screens the employee can access",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "type": "string",
+                                  "example": "screen:booking"
+                                },
+                                "subject": {
+                                  "type": "string",
+                                  "example": "Booking"
+                                },
+                                "description": {
+                                  "type": "string",
+                                  "example": "Booking Management"
+                                }
+                              }
+                            }
+                          },
+                          "actions": {
+                            "type": "array",
+                            "description": "Action permissions",
+                            "items": {
+                              "type": "string",
+                              "example": "booking:create"
+                            }
+                          },
+                          "permissions": {
+                            "type": "array",
+                            "description": "Raw permissions for frontend CASL",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "action": {
+                                  "type": "string",
+                                  "example": "create"
+                                },
+                                "subject": {
+                                  "type": "string",
+                                  "example": "Booking"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            },
+            "404": {
+              "description": "Role not found"
+            }
+          }
+        }
+      },
       "/employee/bookings": {
         "get": {
           "summary": "Get all bookings",
@@ -2062,15 +2623,12 @@ window.onload = function() {
                       "items": {
                         "type": "object",
                         "required": [
-                          "roomTypeId",
-                          "count"
+                          "roomId"
                         ],
                         "properties": {
-                          "roomTypeId": {
-                            "type": "string"
-                          },
-                          "count": {
-                            "type": "integer"
+                          "roomId": {
+                            "type": "string",
+                            "description": "ID of the specific room to book"
                           }
                         }
                       }
@@ -2363,6 +2921,21 @@ window.onload = function() {
                         "CHECKED_OUT",
                         "CANCELLED"
                       ]
+                    },
+                    "rooms": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "roomId"
+                        ],
+                        "properties": {
+                          "roomId": {
+                            "type": "string",
+                            "description": "ID of the specific room"
+                          }
+                        }
+                      }
                     }
                   }
                 }
@@ -3641,6 +4214,11 @@ window.onload = function() {
                       "type": "integer",
                       "description": "Floor number"
                     },
+                    "code": {
+                      "type": "string",
+                      "maxLength": 50,
+                      "description": "Room code (optional)"
+                    },
                     "roomTypeId": {
                       "type": "string",
                       "description": "ID of the room type"
@@ -4077,6 +4655,11 @@ window.onload = function() {
                       "type": "integer",
                       "description": "Floor number"
                     },
+                    "code": {
+                      "type": "string",
+                      "maxLength": 50,
+                      "description": "Room code"
+                    },
                     "roomTypeId": {
                       "type": "string",
                       "description": "ID of the room type"
@@ -4390,6 +4973,7 @@ window.onload = function() {
                   "required": [
                     "name",
                     "capacity",
+                    "totalBed",
                     "pricePerNight"
                   ],
                   "properties": {
@@ -4403,26 +4987,33 @@ window.onload = function() {
                       "minimum": 1,
                       "description": "Maximum number of guests"
                     },
+                    "totalBed": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "Total number of beds in the room"
+                    },
                     "pricePerNight": {
                       "type": "number",
                       "minimum": 0,
                       "description": "Price per night (VND)"
                     },
-                    "amenities": {
-                      "type": "object",
-                      "description": "Room amenities (JSON object)"
+                    "tagIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Array of room tag IDs (optional)"
                     }
                   },
                   "example": {
                     "name": "Phòng Deluxe",
                     "capacity": 2,
+                    "totalBed": 2,
                     "pricePerNight": 1500000,
-                    "amenities": {
-                      "wifi": true,
-                      "airConditioner": true,
-                      "minibar": true,
-                      "balcony": false
-                    }
+                    "tagIds": [
+                      "tag_id_1",
+                      "tag_id_2"
+                    ]
                   }
                 }
               }
@@ -4797,14 +5388,22 @@ window.onload = function() {
                       "minimum": 1,
                       "description": "Maximum number of guests"
                     },
+                    "totalBed": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "Total number of beds in the room"
+                    },
                     "pricePerNight": {
                       "type": "number",
                       "minimum": 0,
                       "description": "Price per night (VND)"
                     },
-                    "amenities": {
-                      "type": "object",
-                      "description": "Room amenities"
+                    "tagIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Array of room tag IDs"
                     }
                   },
                   "example": {
@@ -6307,6 +6906,382 @@ window.onload = function() {
             }
           }
         }
+      },
+      "/employee/calendar-events": {
+        "post": {
+          "summary": "Create a new calendar event",
+          "tags": [
+            "Employee - Calendar Events"
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "name",
+                    "startDate",
+                    "endDate"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "HOLIDAY",
+                        "SEASONAL",
+                        "SPECIAL_EVENT"
+                      ]
+                    },
+                    "startDate": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "endDate": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "Calendar event created successfully"
+            }
+          }
+        },
+        "get": {
+          "summary": "Get all calendar events",
+          "tags": [
+            "Employee - Calendar Events"
+          ],
+          "parameters": [
+            {
+              "in": "query",
+              "name": "type",
+              "schema": {
+                "type": "string",
+                "enum": [
+                  "HOLIDAY",
+                  "SEASONAL",
+                  "SPECIAL_EVENT"
+                ]
+              }
+            },
+            {
+              "in": "query",
+              "name": "startDate",
+              "schema": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            {
+              "in": "query",
+              "name": "endDate",
+              "schema": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "List of calendar events"
+            }
+          }
+        }
+      },
+      "/employee/calendar-events/{id}": {
+        "get": {
+          "summary": "Get a calendar event by ID",
+          "tags": [
+            "Employee - Calendar Events"
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "id",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Calendar event details"
+            },
+            "404": {
+              "description": "Calendar event not found"
+            }
+          }
+        },
+        "put": {
+          "summary": "Update a calendar event",
+          "tags": [
+            "Employee - Calendar Events"
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "id",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Calendar event updated successfully"
+            }
+          }
+        },
+        "delete": {
+          "summary": "Delete a calendar event",
+          "tags": [
+            "Employee - Calendar Events"
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "id",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "204": {
+              "description": "Calendar event deleted successfully"
+            }
+          }
+        }
+      },
+      "/employee/pricing-rules": {
+        "post": {
+          "summary": "Create a new pricing rule",
+          "tags": [
+            "Employee - Pricing Rules"
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "name",
+                    "adjustmentType",
+                    "adjustmentValue"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "roomTypeIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "calendarEventId": {
+                      "type": "string"
+                    },
+                    "startDate": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "endDate": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "recurrenceRule": {
+                      "type": "string"
+                    },
+                    "adjustmentType": {
+                      "type": "string",
+                      "enum": [
+                        "PERCENTAGE",
+                        "FIXED_AMOUNT"
+                      ]
+                    },
+                    "adjustmentValue": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "Pricing rule created successfully"
+            }
+          }
+        },
+        "get": {
+          "summary": "Get all pricing rules",
+          "tags": [
+            "Employee - Pricing Rules"
+          ],
+          "parameters": [
+            {
+              "in": "query",
+              "name": "includeInactive",
+              "schema": {
+                "type": "boolean"
+              },
+              "description": "Include inactive rules"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "List of pricing rules"
+            }
+          }
+        }
+      },
+      "/employee/pricing-rules/{id}": {
+        "get": {
+          "summary": "Get a pricing rule by ID",
+          "tags": [
+            "Employee - Pricing Rules"
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "id",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Pricing rule details"
+            },
+            "404": {
+              "description": "Pricing rule not found"
+            }
+          }
+        },
+        "put": {
+          "summary": "Update a pricing rule",
+          "tags": [
+            "Employee - Pricing Rules"
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "id",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Pricing rule updated successfully"
+            }
+          }
+        },
+        "delete": {
+          "summary": "Delete a pricing rule (soft delete)",
+          "tags": [
+            "Employee - Pricing Rules"
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "id",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Pricing rule deleted successfully"
+            }
+          }
+        }
+      },
+      "/employee/pricing-rules/{id}/reorder": {
+        "post": {
+          "summary": "Reorder a pricing rule",
+          "tags": [
+            "Employee - Pricing Rules"
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "id",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "prevRank": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "nextRank": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Pricing rule reordered successfully"
+            }
+          }
+        }
       }
     },
     "tags": [
@@ -6328,7 +7303,7 @@ window.onload = function() {
       },
       {
         "name": "Customer Rooms",
-        "description": "Customer room search endpoints"
+        "description": "Customer room search and availability endpoints"
       },
       {
         "name": "Customer Services",

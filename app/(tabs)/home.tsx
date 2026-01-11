@@ -7,7 +7,7 @@ import RoomCard from "@/src/components/home/RoomCard";
 import SearchBar from "@/src/components/home/SearchBar";
 import type { Room } from "@/src/types";
 import { useRouter } from "expo-router";
-import { Bell, ChevronDown } from "lucide-react-native";
+import { Bell } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -21,23 +21,26 @@ import {
 export default function HomeScreen() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
-  const [dateRange, setDateRange] = useState("24 OCT-26 OCT");
+  const [dateRange, setDateRange] = useState("Select Dates");
   const [guests, setGuests] = useState(3);
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
-  const [checkInDate, setCheckInDate] = useState<Date | undefined>(undefined);
-  const [checkOutDate, setCheckOutDate] = useState<Date | undefined>(undefined);
+  const [checkInDate, setCheckInDate] = useState<Date | undefined>();
+  const [checkOutDate, setCheckOutDate] = useState<Date | undefined>();
 
   // Rooms state
   const [rooms, setRooms] = useState<Room[]>([]);
   const [isLoadingRooms, setIsLoadingRooms] = useState(false);
   const [roomsError, setRoomsError] = useState<string | null>(null);
 
-  // Fetch rooms on mount
+  // Fetch rooms when dates change
   useEffect(() => {
-    fetchRooms();
-  }, []);
+    if (checkInDate && checkOutDate) {
+      fetchRooms();
+    }
+  }, [checkInDate, checkOutDate]);
 
   const fetchRooms = async () => {
+    if (!checkInDate || !checkOutDate) return;
     try {
       setIsLoadingRooms(true);
       setRoomsError(null);
@@ -45,6 +48,8 @@ export default function HomeScreen() {
       const response = await roomService.getRooms({
         page: 1,
         limit: 10,
+        checkInDate: checkInDate.toISOString().split("T")[0],
+        checkOutDate: checkOutDate.toISOString().split("T")[0],
       });
       setRooms(response.data.data);
     } catch (error: any) {
@@ -130,7 +135,11 @@ export default function HomeScreen() {
   const handleRoomPress = (id: string) => {
     router.push({
       pathname: "/room-details",
-      params: { id },
+      params: {
+        id,
+        checkInDate: checkInDate ? checkInDate.toISOString() : undefined,
+        checkOutDate: checkOutDate ? checkOutDate.toISOString() : undefined,
+      },
     });
   };
 
@@ -143,13 +152,9 @@ export default function HomeScreen() {
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header */}
       <View style={styles.header}>
-        <View>
-          <Text style={styles.locationLabel}>Location</Text>
-          <View style={styles.locationRow}>
-            <Text style={styles.locationText}>Bali, Indonesia</Text>
-            <ChevronDown size={16} color="#007ef2" />
-          </View>
-        </View>
+        <Text style={styles.logo}>
+          Room <Text style={{ color: "#007ef2" }}>Master</Text>
+        </Text>
         <TouchableOpacity style={styles.notificationButton}>
           <Bell size={19} color="#000" />
         </TouchableOpacity>
@@ -174,7 +179,13 @@ export default function HomeScreen() {
       {/* Available Rooms Section */}
       <Text style={styles.sectionTitle}>Available Rooms</Text>
 
-      {isLoadingRooms ? (
+      {!checkInDate || !checkOutDate ? (
+        <View style={styles.selectDatesContainer}>
+          <Text style={styles.selectDatesText}>
+            Please select check-in and check-out dates to view available rooms
+          </Text>
+        </View>
+      ) : isLoadingRooms ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#007ef2" />
         </View>
@@ -245,24 +256,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: 10,
   },
-  locationLabel: {
-    fontSize: 15,
-    fontFamily: "Roboto",
-    fontWeight: "500",
-    color: "rgba(0, 0, 0, 0.81)",
-    marginBottom: 4,
-  },
-  locationRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  locationText: {
+  logo: {
+    fontWeight: "bold",
     fontSize: 20,
     fontFamily: "OpenSans_700Bold",
-    color: "#007ef2",
   },
   notificationButton: {
     width: 40,
@@ -333,6 +331,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Roboto_400Regular",
     color: "#7f7f7f",
+    textAlign: "center",
+  },
+  selectDatesContainer: {
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+    alignItems: "center",
+  },
+  selectDatesText: {
+    fontSize: 14,
+    fontFamily: "Roboto_400Regular",
+    color: "#007ef2",
     textAlign: "center",
   },
 });

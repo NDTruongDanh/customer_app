@@ -9,7 +9,10 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   Image,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -111,169 +114,185 @@ export default function SignupScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
-      <View style={styles.container}>
-        {/* Back Button */}
-        <Pressable style={styles.backButton} onPress={() => router.back()}>
-          <MaterialIcons name="arrow-back" size={24} color="#007EF2" />
-        </Pressable>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.flex}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.container}>
+            {/* Back Button */}
+            <Pressable style={styles.backButton} onPress={() => router.back()}>
+              <MaterialIcons name="arrow-back" size={24} color="#007EF2" />
+            </Pressable>
 
-        {/* Title */}
-        <View style={styles.headerContainer}>
-          <Text style={styles.title}>
-            <Text style={styles.titleCreate}>Create</Text>{" "}
-            <Text style={styles.titleAccount}>Account</Text>
-          </Text>
-          <Text style={styles.subtitle}>
-            Fill your information below or register with your social account.
-          </Text>
-        </View>
+            {/* Title */}
+            <View style={styles.headerContainer}>
+              <Text style={styles.title}>
+                <Text style={styles.titleCreate}>Create</Text>{" "}
+                <Text style={styles.titleAccount}>Account</Text>
+              </Text>
+              <Text style={styles.subtitle}>
+                Fill your information below or register with your social
+                account.
+              </Text>
+            </View>
 
-        {/* Input Fields */}
-        <View style={styles.formContainer}>
-          {/* Full Name Input */}
-          <View style={[styles.inputContainer, styles.inputFocused]}>
-            <User size={18} color="#7F7F7F" style={styles.inputIcon} />
-            <View style={styles.inputContent}>
-              {/* <Text style={styles.inputLabel}>Full Name</Text> */}
-              <TextInput
-                style={styles.input}
-                value={fullName}
-                onChangeText={setFullName}
-                placeholder="Full Name"
-                placeholderTextColor="#7F7F7F"
-              />
+            {/* Input Fields */}
+            <View style={styles.formContainer}>
+              {/* Full Name Input */}
+              <View style={[styles.inputContainer, styles.inputFocused]}>
+                <User size={18} color="#7F7F7F" style={styles.inputIcon} />
+                <View style={styles.inputContent}>
+                  {/* <Text style={styles.inputLabel}>Full Name</Text> */}
+                  <TextInput
+                    style={styles.input}
+                    value={fullName}
+                    onChangeText={setFullName}
+                    placeholder="Full Name"
+                    placeholderTextColor="#7F7F7F"
+                  />
+                </View>
+              </View>
+
+              {/* Email Input */}
+              <View style={styles.inputContainer}>
+                <Mail size={18} color="#7F7F7F" style={styles.emailIcon} />
+                <TextInput
+                  style={styles.inputField}
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="Email Address"
+                  placeholderTextColor="#7F7F7F"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              </View>
+
+              {/* Phone Input */}
+              <View style={styles.inputContainer}>
+                <Phone size={18} color="#7F7F7F" style={styles.phoneIcon} />
+                <TextInput
+                  style={styles.inputField}
+                  value={phone}
+                  onChangeText={setPhone}
+                  placeholder="Phone Number"
+                  placeholderTextColor="#7F7F7F"
+                  keyboardType="phone-pad"
+                  autoCapitalize="none"
+                />
+              </View>
+
+              {/* Password Input */}
+              <View style={styles.inputContainer}>
+                <Lock size={18} color="#7F7F7F" style={styles.passwordIcon} />
+                <TextInput
+                  style={styles.inputField}
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder="Password"
+                  placeholderTextColor="#7F7F7F"
+                  secureTextEntry={!showPassword}
+                />
+                <Pressable onPress={() => setShowPassword(!showPassword)}>
+                  {showPassword ? (
+                    <EyeOff size={18} color="#7F7F7F" />
+                  ) : (
+                    <Eye size={18} color="#7F7F7F" />
+                  )}
+                </Pressable>
+              </View>
+
+              {/* Confirm Password Input */}
+              <View style={styles.inputContainer}>
+                <Lock size={18} color="#7F7F7F" style={styles.passwordIcon} />
+                <TextInput
+                  style={styles.inputField}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  placeholder="Confirm Password"
+                  placeholderTextColor="#7F7F7F"
+                  secureTextEntry={!showConfirmPassword}
+                />
+                <Pressable
+                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff size={18} color="#7F7F7F" />
+                  ) : (
+                    <Eye size={18} color="#7F7F7F" />
+                  )}
+                </Pressable>
+              </View>
+
+              {/* Continue Button */}
+              <Pressable
+                style={[
+                  styles.continueButton,
+                  loading && styles.continueButtonDisabled,
+                ]}
+                onPress={handleContinue}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.continueButtonText}>Continue</Text>
+                )}
+              </Pressable>
+            </View>
+
+            {/* Social Login Section */}
+            <View style={styles.socialContainer}>
+              <View style={styles.dividerContainer}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>Or signup with</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
+              <View style={styles.socialButtonsContainer}>
+                {/* Google Button */}
+                <Pressable
+                  style={styles.socialButton}
+                  onPress={handleGoogleSignup}
+                >
+                  <Image
+                    source={{
+                      uri: "https://www.figma.com/api/mcp/asset/ff677b0b-2270-40ee-b873-166062a75610",
+                    }}
+                    style={styles.socialIcon}
+                  />
+                </Pressable>
+
+                {/* Facebook Button */}
+                <Pressable
+                  style={styles.socialButton}
+                  onPress={handleFacebookSignup}
+                >
+                  <Image
+                    source={{
+                      uri: "https://www.figma.com/api/mcp/asset/b4e7a989-70a3-41ab-906b-c45a3ab678d0",
+                    }}
+                    style={styles.socialIcon}
+                  />
+                </Pressable>
+              </View>
+            </View>
+
+            {/* Login Link */}
+            <View style={styles.loginContainer}>
+              <Text style={styles.loginText}>Already have an account? </Text>
+              <Pressable onPress={handleLoginPress}>
+                <Text style={styles.loginLink}>Login</Text>
+              </Pressable>
             </View>
           </View>
-
-          {/* Email Input */}
-          <View style={styles.inputContainer}>
-            <Mail size={18} color="#7F7F7F" style={styles.emailIcon} />
-            <TextInput
-              style={styles.inputField}
-              value={email}
-              onChangeText={setEmail}
-              placeholder="Email Address"
-              placeholderTextColor="#7F7F7F"
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-          </View>
-
-          {/* Email Input */}
-          <View style={styles.inputContainer}>
-            <Phone size={18} color="#7F7F7F" style={styles.phoneIcon} />
-            <TextInput
-              style={styles.inputField}
-              value={phone}
-              onChangeText={setPhone}
-              placeholder="Phone Number"
-              placeholderTextColor="#7F7F7F"
-              keyboardType="phone-pad"
-              autoCapitalize="none"
-            />
-          </View>
-
-          {/* Password Input */}
-          <View style={styles.inputContainer}>
-            <Lock size={18} color="#7F7F7F" style={styles.passwordIcon} />
-            <TextInput
-              style={styles.inputField}
-              value={password}
-              onChangeText={setPassword}
-              placeholder="Password"
-              placeholderTextColor="#7F7F7F"
-              secureTextEntry={!showPassword}
-            />
-            <Pressable onPress={() => setShowPassword(!showPassword)}>
-              {showPassword ? (
-                <EyeOff size={18} color="#7F7F7F" />
-              ) : (
-                <Eye size={18} color="#7F7F7F" />
-              )}
-            </Pressable>
-          </View>
-
-          {/* Confirm Password Input */}
-          <View style={styles.inputContainer}>
-            <Lock size={18} color="#7F7F7F" style={styles.passwordIcon} />
-            <TextInput
-              style={styles.inputField}
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              placeholder="Confirm Password"
-              placeholderTextColor="#7F7F7F"
-              secureTextEntry={!showConfirmPassword}
-            />
-            <Pressable
-              onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-            >
-              {showConfirmPassword ? (
-                <EyeOff size={18} color="#7F7F7F" />
-              ) : (
-                <Eye size={18} color="#7F7F7F" />
-              )}
-            </Pressable>
-          </View>
-
-          {/* Continue Button */}
-          <Pressable
-            style={[
-              styles.continueButton,
-              loading && styles.continueButtonDisabled,
-            ]}
-            onPress={handleContinue}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.continueButtonText}>Continue</Text>
-            )}
-          </Pressable>
-        </View>
-
-        {/* Social Login Section */}
-        <View style={styles.socialContainer}>
-          <View style={styles.dividerContainer}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>Or signup with</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          <View style={styles.socialButtonsContainer}>
-            {/* Google Button */}
-            <Pressable style={styles.socialButton} onPress={handleGoogleSignup}>
-              <Image
-                source={{
-                  uri: "https://www.figma.com/api/mcp/asset/ff677b0b-2270-40ee-b873-166062a75610",
-                }}
-                style={styles.socialIcon}
-              />
-            </Pressable>
-
-            {/* Facebook Button */}
-            <Pressable
-              style={styles.socialButton}
-              onPress={handleFacebookSignup}
-            >
-              <Image
-                source={{
-                  uri: "https://www.figma.com/api/mcp/asset/b4e7a989-70a3-41ab-906b-c45a3ab678d0",
-                }}
-                style={styles.socialIcon}
-              />
-            </Pressable>
-          </View>
-        </View>
-
-        {/* Login Link */}
-        <View style={styles.loginContainer}>
-          <Text style={styles.loginText}>Already have an account? </Text>
-          <Pressable onPress={handleLoginPress}>
-            <Text style={styles.loginLink}>Login</Text>
-          </Pressable>
-        </View>
-      </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -282,6 +301,12 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: "#F5FAFE",
+  },
+  flex: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
   container: {
     flex: 1,
