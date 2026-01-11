@@ -236,7 +236,7 @@ Store these securely in environment variables:
    - vnp_OrderInfo = <order description>
    - vnp_OrderType = "billpayment"
    - vnp_Locale = "vn" or "en"
-   - vnp_ReturnUrl = <IPN callback URL on your server>
+   - vnp_ReturnUrl = "http://success.sdk.merchantbackapp" (or fail/cancel based on logic, see Important Notes above)
    - vnp_IpAddr = <customer IP>
    - vnp_CreateDate = <yyyyMMddHHmmss>
    ↓

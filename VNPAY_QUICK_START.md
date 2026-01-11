@@ -22,22 +22,13 @@ Contact VNPAY or login to your merchant dashboard to get:
 
 ### Step 2: Configure Mobile App (1 minute)
 
-Open `src/utils/vnpay.ts` and replace the placeholder:
+Open `.env` (create if needed) and add your TMN Code:
 
-```typescript
-const VNPAY_CONFIG = {
-  TMN_CODE: "YOUR_TMN_CODE", // ⬅️ REPLACE THIS with your actual TMN code
-  SCHEME: "roommaster",
-  IS_SANDBOX: true, // Keep true for testing
-  // ... rest stays the same
-};
+```env
+EXPO_PUBLIC_TMN_CODE=YOUR_TMN_CODE
 ```
 
-**Example**:
-
-```typescript
-TMN_CODE: 'FAHASA02', // ✅ For sandbox testing
-```
+The code in `src/utils/vnpay.ts` is already set up to read this variable.
 
 ### Step 3: Provide Backend API Spec to Backend Team
 

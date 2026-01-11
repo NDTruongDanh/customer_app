@@ -4,16 +4,21 @@
  * Based on official VNPAY Mobile SDK specification v1.1
  */
 
-import { Alert, NativeEventEmitter } from "react-native";
-import VNPMerchant, { VnpayMerchantModule } from "react-native-vnpay-merchant";
+import { Alert, NativeEventEmitter, NativeModules } from "react-native";
+import VNPMerchant from "react-native-vnpay-merchant";
 import type { VnpayPaymentResult } from "../types/payment.types";
+
+// Get the native module from NativeModules
+const { VnpayMerchant: VnpayMerchantModule } = NativeModules;
 
 /**
  * VNPAY Configuration
  * Update these values based on your VNPAY merchant account
  */
+const tmnCode = process.env.EXPO_PUBLIC_TMN_CODE;
+
 const VNPAY_CONFIG = {
-  TMN_CODE: process.env.TMN_CODE, // Replace with your TMN code from VNPAY
+  TMN_CODE: tmnCode, // Replace with your TMN code from VNPAY
   SCHEME: "roommaster", // URL scheme for deep linking
   IS_SANDBOX: true, // Set to false for production
   TITLE: "Thanh toán đặt phòng",
@@ -36,6 +41,16 @@ export const openVnpayPayment = async (
 ): Promise<VnpayPaymentResult> => {
   return new Promise((resolve, reject) => {
     try {
+      // Check if native module is available
+      if (!VnpayMerchantModule) {
+        const error = new Error(
+          "VNPAY native module is not available. Make sure react-native-vnpay-merchant is properly installed and linked."
+        );
+        console.error(error.message);
+        reject(error);
+        return;
+      }
+
       // Create event emitter for SDK callbacks
       const eventEmitter = new NativeEventEmitter(VnpayMerchantModule);
 
