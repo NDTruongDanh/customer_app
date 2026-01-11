@@ -19,6 +19,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -71,147 +72,157 @@ export default function ProfileScreen() {
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }
-    >
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>My Profile</Text>
-        <Text style={styles.headerSubtitle}>Your personal information</Text>
-      </View>
-
-      {/* Profile Info */}
-      <View style={styles.profileSection}>
-        {/* Avatar and Name */}
-        <View style={styles.avatarContainer}>
-          <View style={styles.avatar}>
-            <UserIcon size={50} color="#007ef2" strokeWidth={2} />
-          </View>
-          <Text style={styles.userName}>
-            {profile?.fullName || "Guest User"}
-          </Text>
-          <View style={styles.memberBadge}>
-            <Text style={styles.memberBadgeText}>Customer</Text>
-          </View>
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <ScrollView
+        style={styles.container}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>My Profile</Text>
+          <Text style={styles.headerSubtitle}>Your personal information</Text>
         </View>
 
-        {/* Personal Information Card */}
-        <View style={styles.sectionContainer}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Personal Information</Text>
-            <TouchableOpacity
-              style={styles.editButton}
-              onPress={() => router.push("/edit-profile")}
-            >
-              <Edit3 size={16} color="#007ef2" />
-              <Text style={styles.editButtonText}>Edit</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.infoCard}>
-            {/* Full Name */}
-            <View style={styles.infoRow}>
-              <View style={styles.iconContainer}>
-                <UserIcon size={20} color="#007ef2" />
-              </View>
-              <View style={styles.infoTextContainer}>
-                <Text style={styles.infoLabel}>Full Name</Text>
-                <Text style={styles.infoValue}>
-                  {profile?.fullName || "N/A"}
-                </Text>
-              </View>
+        {/* Profile Info */}
+        <View style={styles.profileSection}>
+          {/* Avatar and Name */}
+          <View style={styles.avatarContainer}>
+            <View style={styles.avatar}>
+              <UserIcon size={50} color="#007ef2" strokeWidth={2} />
             </View>
-
-            {/* Email */}
-            <View style={styles.infoRow}>
-              <View style={styles.iconContainer}>
-                <Mail size={20} color="#007ef2" />
-              </View>
-              <View style={styles.infoTextContainer}>
-                <Text style={styles.infoLabel}>Email Address</Text>
-                <Text style={styles.infoValue}>{profile?.email || "N/A"}</Text>
-              </View>
-            </View>
-
-            {/* Phone */}
-            <View style={styles.infoRow}>
-              <View style={styles.iconContainer}>
-                <Phone size={20} color="#007ef2" />
-              </View>
-              <View style={styles.infoTextContainer}>
-                <Text style={styles.infoLabel}>Phone Number</Text>
-                <Text style={styles.infoValue}>{profile?.phone || "N/A"}</Text>
-              </View>
-            </View>
-
-            {/* ID Number */}
-            <View style={styles.infoRow}>
-              <View style={styles.iconContainer}>
-                <CreditCard size={20} color="#007ef2" />
-              </View>
-              <View style={styles.infoTextContainer}>
-                <Text style={styles.infoLabel}>ID Number</Text>
-                <Text style={styles.infoValue}>
-                  {profile?.idNumber || "N/A"}
-                </Text>
-              </View>
-            </View>
-
-            {/* Address */}
-            <View style={[styles.infoRow, styles.lastInfoRow]}>
-              <View style={styles.iconContainer}>
-                <Home size={20} color="#007ef2" />
-              </View>
-              <View style={styles.infoTextContainer}>
-                <Text style={styles.infoLabel}>Address</Text>
-                <Text style={styles.infoValue}>
-                  {profile?.address || "N/A"}
-                </Text>
-              </View>
+            <Text style={styles.userName}>
+              {profile?.fullName || "Guest User"}
+            </Text>
+            <View style={styles.memberBadge}>
+              <Text style={styles.memberBadgeText}>Customer</Text>
             </View>
           </View>
+
+          {/* Personal Information Card */}
+          <View style={styles.sectionContainer}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Personal Information</Text>
+              <TouchableOpacity
+                style={styles.editButton}
+                onPress={() => router.push("/edit-profile")}
+              >
+                <Edit3 size={16} color="#007ef2" />
+                <Text style={styles.editButtonText}>Edit</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.infoCard}>
+              {/* Full Name */}
+              <View style={styles.infoRow}>
+                <View style={styles.iconContainer}>
+                  <UserIcon size={20} color="#007ef2" />
+                </View>
+                <View style={styles.infoTextContainer}>
+                  <Text style={styles.infoLabel}>Full Name</Text>
+                  <Text style={styles.infoValue}>
+                    {profile?.fullName || "N/A"}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Email */}
+              <View style={styles.infoRow}>
+                <View style={styles.iconContainer}>
+                  <Mail size={20} color="#007ef2" />
+                </View>
+                <View style={styles.infoTextContainer}>
+                  <Text style={styles.infoLabel}>Email Address</Text>
+                  <Text style={styles.infoValue}>
+                    {profile?.email || "N/A"}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Phone */}
+              <View style={styles.infoRow}>
+                <View style={styles.iconContainer}>
+                  <Phone size={20} color="#007ef2" />
+                </View>
+                <View style={styles.infoTextContainer}>
+                  <Text style={styles.infoLabel}>Phone Number</Text>
+                  <Text style={styles.infoValue}>
+                    {profile?.phone || "N/A"}
+                  </Text>
+                </View>
+              </View>
+
+              {/* ID Number */}
+              <View style={styles.infoRow}>
+                <View style={styles.iconContainer}>
+                  <CreditCard size={20} color="#007ef2" />
+                </View>
+                <View style={styles.infoTextContainer}>
+                  <Text style={styles.infoLabel}>ID Number</Text>
+                  <Text style={styles.infoValue}>
+                    {profile?.idNumber || "N/A"}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Address */}
+              <View style={[styles.infoRow, styles.lastInfoRow]}>
+                <View style={styles.iconContainer}>
+                  <Home size={20} color="#007ef2" />
+                </View>
+                <View style={styles.infoTextContainer}>
+                  <Text style={styles.infoLabel}>Address</Text>
+                  <Text style={styles.infoValue}>
+                    {profile?.address || "N/A"}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* Account Statistics */}
+          <View style={styles.statsContainer}>
+            <View style={styles.statBox}>
+              <Text style={styles.statValue}>-</Text>
+              <Text style={styles.statLabel}>Total Bookings</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statBox}>
+              <Text style={styles.statValue}>-</Text>
+              <Text style={styles.statLabel}>Active Bookings</Text>
+            </View>
+          </View>
+
+          {/* Logout Button */}
+          <TouchableOpacity
+            style={styles.logoutButton}
+            onPress={handleLogout}
+            disabled={logoutMutation.isPending}
+          >
+            {logoutMutation.isPending ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <>
+                <LogOut size={20} color="#fff" />
+                <Text style={styles.logoutButtonText}>Logout</Text>
+              </>
+            )}
+          </TouchableOpacity>
         </View>
 
-        {/* Account Statistics */}
-        <View style={styles.statsContainer}>
-          <View style={styles.statBox}>
-            <Text style={styles.statValue}>-</Text>
-            <Text style={styles.statLabel}>Total Bookings</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statBox}>
-            <Text style={styles.statValue}>-</Text>
-            <Text style={styles.statLabel}>Active Bookings</Text>
-          </View>
-        </View>
-
-        {/* Logout Button */}
-        <TouchableOpacity
-          style={styles.logoutButton}
-          onPress={handleLogout}
-          disabled={logoutMutation.isPending}
-        >
-          {logoutMutation.isPending ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <>
-              <LogOut size={20} color="#fff" />
-              <Text style={styles.logoutButtonText}>Logout</Text>
-            </>
-          )}
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.bottomSpacing} />
-    </ScrollView>
+        <View style={styles.bottomSpacing} />
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#f5fafe",
+  },
   container: {
     flex: 1,
     backgroundColor: "#f5fafe",
@@ -224,7 +235,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 20,
-    paddingTop: 60,
+    paddingTop: 24,
     paddingBottom: 24,
     backgroundColor: "#fff",
     borderBottomLeftRadius: 24,

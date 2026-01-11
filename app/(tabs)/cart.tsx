@@ -9,6 +9,7 @@ import { useRouter } from "expo-router";
 import { ArrowLeft, ShoppingCart } from "lucide-react-native";
 import {
   FlatList,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -62,101 +63,109 @@ export default function CartScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <ArrowLeft size={24} color="#007ef2" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>My Cart</Text>
-        {cartItems.length > 0 && (
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
           <TouchableOpacity
-            style={styles.clearButton}
-            onPress={handleClearCart}
+            style={styles.backButton}
+            onPress={() => router.back()}
           >
-            <Text style={styles.clearButtonText}>Clear All</Text>
+            <ArrowLeft size={24} color="#007ef2" />
           </TouchableOpacity>
-        )}
-        {cartItems.length === 0 && <View style={styles.headerPlaceholder} />}
-      </View>
-
-      {cartItems.length === 0 ? (
-        renderEmptyCart()
-      ) : (
-        <>
-          {/* Cart Items List */}
-          <FlatList
-            data={cartItems}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <CartItemCard
-                item={item}
-                onRemove={() => handleRemoveItem(item.id)}
-                onUpdateGuests={(guests) => handleUpdateGuests(item.id, guests)}
-              />
-            )}
-            contentContainerStyle={styles.listContent}
-            showsVerticalScrollIndicator={false}
-          />
-
-          {/* Summary Section */}
-          <View style={styles.summaryContainer}>
-            <ScrollView
-              style={styles.summaryScroll}
-              showsVerticalScrollIndicator={false}
+          <Text style={styles.headerTitle}>My Cart</Text>
+          {cartItems.length > 0 && (
+            <TouchableOpacity
+              style={styles.clearButton}
+              onPress={handleClearCart}
             >
-              <Text style={styles.summaryTitle}>Booking Summary</Text>
+              <Text style={styles.clearButtonText}>Clear All</Text>
+            </TouchableOpacity>
+          )}
+          {cartItems.length === 0 && <View style={styles.headerPlaceholder} />}
+        </View>
 
-              {/* Items Count */}
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>
-                  {cartItems.length} room{cartItems.length > 1 ? "s" : ""}
-                </Text>
-                <Text style={styles.summaryValue}>
-                  {subtotal.toLocaleString("en-US")} VND
-                </Text>
-              </View>
+        {cartItems.length === 0 ? (
+          renderEmptyCart()
+        ) : (
+          <>
+            {/* Cart Items List */}
+            <FlatList
+              data={cartItems}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <CartItemCard
+                  item={item}
+                  onRemove={() => handleRemoveItem(item.id)}
+                  onUpdateGuests={(guests) =>
+                    handleUpdateGuests(item.id, guests)
+                  }
+                />
+              )}
+              contentContainerStyle={styles.listContent}
+              showsVerticalScrollIndicator={false}
+            />
 
-              {/* Service Fee */}
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Service fee</Text>
-                <Text style={styles.summaryValue}>
-                  {serviceFee.toLocaleString("en-US")} VND
-                </Text>
-              </View>
-
-              {/* Divider */}
-              <View style={styles.divider} />
-
-              {/* Total */}
-              <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>Total</Text>
-                <Text style={styles.totalValue}>
-                  {total.toLocaleString("en-US")} VND
-                </Text>
-              </View>
-
-              {/* Checkout Button */}
-              <TouchableOpacity
-                style={styles.checkoutButton}
-                onPress={handleProceedToCheckout}
+            {/* Summary Section */}
+            <View style={styles.summaryContainer}>
+              <ScrollView
+                style={styles.summaryScroll}
+                showsVerticalScrollIndicator={false}
               >
-                <Text style={styles.checkoutButtonText}>
-                  Proceed to Checkout
-                </Text>
-              </TouchableOpacity>
-            </ScrollView>
-          </View>
-        </>
-      )}
+                <Text style={styles.summaryTitle}>Booking Summary</Text>
+
+                {/* Items Count */}
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>
+                    {cartItems.length} room{cartItems.length > 1 ? "s" : ""}
+                  </Text>
+                  <Text style={styles.summaryValue}>
+                    {subtotal.toLocaleString("en-US")} VND
+                  </Text>
+                </View>
+
+                {/* Service Fee */}
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Service fee</Text>
+                  <Text style={styles.summaryValue}>
+                    {serviceFee.toLocaleString("en-US")} VND
+                  </Text>
+                </View>
+
+                {/* Divider */}
+                <View style={styles.divider} />
+
+                {/* Total */}
+                <View style={styles.totalRow}>
+                  <Text style={styles.totalLabel}>Total</Text>
+                  <Text style={styles.totalValue}>
+                    {total.toLocaleString("en-US")} VND
+                  </Text>
+                </View>
+
+                {/* Checkout Button */}
+                <TouchableOpacity
+                  style={styles.checkoutButton}
+                  onPress={handleProceedToCheckout}
+                >
+                  <Text style={styles.checkoutButtonText}>
+                    Proceed to Checkout
+                  </Text>
+                </TouchableOpacity>
+              </ScrollView>
+            </View>
+          </>
+        )}
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#f5fafe",
+  },
   container: {
     flex: 1,
     backgroundColor: "#f5fafe",
@@ -166,7 +175,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 16,
+    paddingBottom: 12,
     backgroundColor: "#fff",
     borderBottomWidth: 1,
     borderBottomColor: "#f0f0f0",
@@ -240,8 +250,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     paddingTop: 20,
     paddingHorizontal: 16,
-    paddingBottom: 16,
-    maxHeight: 320,
+    paddingBottom: Platform.OS === "ios" ? 40 : 24,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
@@ -249,7 +258,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   summaryScroll: {
-    flex: 1,
+    maxHeight: 280,
   },
   summaryTitle: {
     fontSize: 18,

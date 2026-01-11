@@ -2,75 +2,68 @@ import { useCart } from "@/src/context/CartContext";
 import { Tabs } from "expo-router";
 import { Calendar, Home, ShoppingCart, User } from "lucide-react-native";
 import { StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function TabLayout() {
   const { getCartItemCount } = useCart();
   const cartCount = getCartItemCount();
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={["top"]}>
-      <Tabs
-        screenOptions={{
-          headerShown: false,
-          tabBarActiveTintColor: "#007ef2",
-          tabBarInactiveTintColor: "#7f7f7f",
-          tabBarStyle: styles.tabBar,
-          tabBarLabelStyle: styles.tabBarLabel,
-          tabBarIconStyle: styles.tabBarIcon,
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: "#007ef2",
+        tabBarInactiveTintColor: "#7f7f7f",
+        tabBarStyle: styles.tabBar,
+        tabBarLabelStyle: styles.tabBarLabel,
+        tabBarIconStyle: styles.tabBarIcon,
+      }}
+    >
+      <Tabs.Screen
+        name="home"
+        options={{
+          title: "Home",
+          tabBarIcon: ({ color, focused }) => (
+            <Home size={20} color={color} fill={focused ? color : "none"} />
+          ),
         }}
-      >
-        <Tabs.Screen
-          name="home"
-          options={{
-            title: "Home",
-            tabBarIcon: ({ color, focused }) => (
-              <Home size={20} color={color} fill={focused ? color : "none"} />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="cart"
-          options={{
-            title: "Cart",
-            tabBarIcon: ({ color }) => (
-              <View style={styles.cartIconContainer}>
-                <ShoppingCart size={20} color={color} />
-                {cartCount > 0 && (
-                  <View style={styles.badge}>
-                    <Text style={styles.badgeText}>
-                      {cartCount > 9 ? "9+" : cartCount}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="my-bookings"
-          options={{
-            title: "My bookings",
-            tabBarIcon: ({ color }) => <Calendar size={16} color={color} />,
-          }}
-        />
-        <Tabs.Screen
-          name="profile"
-          options={{
-            title: "Profile",
-            tabBarIcon: ({ color }) => <User size={20} color={color} />,
-          }}
-        />
-      </Tabs>
-    </SafeAreaView>
+      />
+      <Tabs.Screen
+        name="cart"
+        options={{
+          title: "Cart",
+          tabBarIcon: ({ color }) => (
+            <View style={styles.cartIconContainer}>
+              <ShoppingCart size={20} color={color} />
+              {cartCount > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>
+                    {cartCount > 9 ? "9+" : cartCount}
+                  </Text>
+                </View>
+              )}
+            </View>
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="my-bookings"
+        options={{
+          title: "My bookings",
+          tabBarIcon: ({ color }) => <Calendar size={16} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "Profile",
+          tabBarIcon: ({ color }) => <User size={20} color={color} />,
+        }}
+      />
+    </Tabs>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#f5fafe",
-  },
   tabBar: {
     backgroundColor: "#fff",
     borderTopWidth: 0,

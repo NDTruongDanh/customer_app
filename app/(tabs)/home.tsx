@@ -16,6 +16,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -140,106 +141,111 @@ export default function HomeScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.logo}>
-          Room <Text style={{ color: "#007ef2" }}>Master</Text>
-        </Text>
-        <TouchableOpacity style={styles.notificationButton}>
-          <Bell size={19} color="#000" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Date and Guest Selector */}
-      <DateGuestSelector
-        dateRange={dateRange}
-        guests={guests}
-        onDatePress={handleDatePress}
-        onGuestsPress={handleGuestsPress}
-      />
-
-      {/* Search Bar and Filter */}
-      <View style={styles.searchRow}>
-        <View style={styles.searchContainer}>
-          <SearchBar value={searchQuery} onChangeText={setSearchQuery} />
-        </View>
-        <FilterButton onPress={handleFilterPress} />
-      </View>
-
-      {/* Available Rooms Section */}
-      <Text style={styles.sectionTitle}>Available Rooms</Text>
-
-      {!checkInDate || !checkOutDate ? (
-        <View style={styles.selectDatesContainer}>
-          <Text style={styles.selectDatesText}>
-            Please select check-in and check-out dates to view available rooms
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.logo}>
+            Room <Text style={{ color: "#007ef2" }}>Master</Text>
           </Text>
-        </View>
-      ) : isLoadingRooms ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007ef2" />
-        </View>
-      ) : roomsError ? (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{roomsError}</Text>
-          <TouchableOpacity
-            onPress={() => refetchRooms()}
-            style={styles.retryButton}
-          >
-            <Text style={styles.retryText}>Retry</Text>
+          <TouchableOpacity style={styles.notificationButton}>
+            <Bell size={19} color="#000" />
           </TouchableOpacity>
         </View>
-      ) : rooms.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No rooms available</Text>
+
+        {/* Date and Guest Selector */}
+        <DateGuestSelector
+          dateRange={dateRange}
+          guests={guests}
+          onDatePress={handleDatePress}
+          onGuestsPress={handleGuestsPress}
+        />
+
+        {/* Search Bar and Filter */}
+        <View style={styles.searchRow}>
+          <View style={styles.searchContainer}>
+            <SearchBar value={searchQuery} onChangeText={setSearchQuery} />
+          </View>
+          <FilterButton onPress={handleFilterPress} />
         </View>
-      ) : (
+
+        {/* Available Rooms Section */}
+        <Text style={styles.sectionTitle}>Available Rooms</Text>
+
+        {!checkInDate || !checkOutDate ? (
+          <View style={styles.selectDatesContainer}>
+            <Text style={styles.selectDatesText}>
+              Please select check-in and check-out dates to view available rooms
+            </Text>
+          </View>
+        ) : isLoadingRooms ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#007ef2" />
+          </View>
+        ) : roomsError ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{roomsError}</Text>
+            <TouchableOpacity
+              onPress={() => refetchRooms()}
+              style={styles.retryButton}
+            >
+              <Text style={styles.retryText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : rooms.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No rooms available</Text>
+          </View>
+        ) : (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.horizontalScroll}
+            contentContainerStyle={styles.horizontalScrollContent}
+          >
+            {rooms.map((room) => (
+              <RoomCard
+                key={room.id}
+                room={room}
+                onPress={() => handleRoomPress(room.id)}
+                onFavoritePress={() => handleFavoritePress(room.id)}
+              />
+            ))}
+          </ScrollView>
+        )}
+
+        {/* Business Accommodates Section */}
+        <Text style={styles.sectionTitle}>Business Accommodates</Text>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.horizontalScroll}
           contentContainerStyle={styles.horizontalScrollContent}
         >
-          {rooms.map((room) => (
-            <RoomCard
-              key={room.id}
-              room={room}
-              onPress={() => handleRoomPress(room.id)}
-              onFavoritePress={() => handleFavoritePress(room.id)}
-            />
+          {businessAccommodates.map((business) => (
+            <BusinessCard key={business.id} {...business} />
           ))}
         </ScrollView>
-      )}
 
-      {/* Business Accommodates Section */}
-      <Text style={styles.sectionTitle}>Business Accommodates</Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.horizontalScroll}
-        contentContainerStyle={styles.horizontalScrollContent}
-      >
-        {businessAccommodates.map((business) => (
-          <BusinessCard key={business.id} {...business} />
-        ))}
+        <View style={styles.bottomSpacing} />
+
+        {/* Date Range Picker Modal */}
+        <DateRangePicker
+          visible={isDatePickerVisible}
+          onClose={() => setIsDatePickerVisible(false)}
+          onSelectRange={handleDateRangeSelect}
+          initialCheckIn={checkInDate}
+          initialCheckOut={checkOutDate}
+        />
       </ScrollView>
-
-      <View style={styles.bottomSpacing} />
-
-      {/* Date Range Picker Modal */}
-      <DateRangePicker
-        visible={isDatePickerVisible}
-        onClose={() => setIsDatePickerVisible(false)}
-        onSelectRange={handleDateRangeSelect}
-        initialCheckIn={checkInDate}
-        initialCheckOut={checkOutDate}
-      />
-    </ScrollView>
+    </SafeAreaView>
   );
 }
-
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#f5fafe",
+  },
   container: {
     flex: 1,
     backgroundColor: "#f5fafe",
