@@ -1,5 +1,7 @@
+import { CloudinaryImage } from "@/src/components/CloudinaryImage";
 import { useCart } from "@/src/context/CartContext";
 import { useRoomDetails } from "@/src/hooks";
+import type { RoomImage, RoomTypeImage } from "@/src/types";
 import { showAlert } from "@/src/utils/alert";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
@@ -17,12 +19,15 @@ import {
 import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Dimensions,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 export default function RoomDetailsScreen() {
   const router = useRouter();
@@ -174,11 +179,67 @@ export default function RoomDetailsScreen() {
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
       >
-        {/* Room Image */}
-        <View style={styles.imageContainer}>
-          <View style={styles.placeholderImage}>
-            <Text style={styles.placeholderText}>Room Image</Text>
-          </View>
+        {/* Room Image Carousel */}
+        <View style={styles.imageCarouselContainer}>
+          {(() => {
+            // Combine room images and room type images, prefer room-specific images
+            const roomImages = room.images || [];
+            const roomTypeImages = room.roomType.images || [];
+            const allImages: (RoomImage | RoomTypeImage)[] =
+              roomImages.length > 0 ? roomImages : roomTypeImages;
+
+            if (allImages.length === 0) {
+              return (
+                <View style={styles.placeholderImage}>
+                  <Text style={styles.placeholderText}>
+                    No images available
+                  </Text>
+                </View>
+              );
+            }
+
+            // Sort by sortOrder and find default
+            const sortedImages = [...allImages].sort(
+              (a, b) => a.sortOrder - b.sortOrder
+            );
+
+            return (
+              <>
+                <ScrollView
+                  horizontal
+                  pagingEnabled
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.imageCarousel}
+                >
+                  {sortedImages.map((image, index) => (
+                    <View key={image.id} style={styles.carouselImageWrapper}>
+                      <CloudinaryImage
+                        src={image.secureUrl || image.url}
+                        width={800}
+                        transformation="c_fill,ar_16:9,q_auto:best"
+                        style={styles.carouselImage}
+                        contentFit="cover"
+                      />
+                    </View>
+                  ))}
+                </ScrollView>
+                {/* Image indicators */}
+                {sortedImages.length > 1 && (
+                  <View style={styles.imageIndicators}>
+                    {sortedImages.map((_, index) => (
+                      <View
+                        key={index}
+                        style={[
+                          styles.imageIndicator,
+                          index === 0 && styles.imageIndicatorActive,
+                        ]}
+                      />
+                    ))}
+                  </View>
+                )}
+              </>
+            );
+          })()}
         </View>
 
         {/* Room Info */}
@@ -356,14 +417,6 @@ export default function RoomDetailsScreen() {
               </View>
             </View>
           </View>
-
-          {/* Gallery Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Gallery</Text>
-            <View style={styles.galleryPlaceholder}>
-              <Text style={styles.placeholderText}>Gallery coming soon</Text>
-            </View>
-          </View>
         </View>
       </ScrollView>
 
@@ -470,11 +523,45 @@ const styles = StyleSheet.create({
     height: 290,
     backgroundColor: "#e0e0e0",
   },
+  imageCarouselContainer: {
+    height: 290,
+    backgroundColor: "#e0e0e0",
+  },
+  imageCarousel: {
+    flex: 1,
+  },
+  carouselImageWrapper: {
+    width: SCREEN_WIDTH,
+    height: 290,
+  },
+  carouselImage: {
+    width: "100%",
+    height: "100%",
+  },
+  imageIndicators: {
+    position: "absolute",
+    bottom: 16,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 8,
+  },
+  imageIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "rgba(255, 255, 255, 0.5)",
+  },
+  imageIndicatorActive: {
+    backgroundColor: "#fff",
+  },
   placeholderImage: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#d0d0d0",
+    height: 290,
   },
   placeholderText: {
     fontSize: 16,

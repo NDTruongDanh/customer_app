@@ -26,6 +26,23 @@ export interface RoomTypeTag {
 }
 
 /**
+ * Room Type Image - Nested image in room type response
+ */
+export interface RoomTypeImage {
+  id: string;
+  url: string;
+  secureUrl: string;
+  thumbnailUrl?: string;
+  cloudinaryId: string;
+  width?: number;
+  height?: number;
+  format?: string;
+  sortOrder: number;
+  isDefault: boolean;
+  createdAt: string;
+}
+
+/**
  * Room Type - Category of room (Standard, Deluxe, Suite, etc.)
  */
 export interface RoomType {
@@ -37,12 +54,31 @@ export interface RoomType {
   createdAt: string;
   updatedAt: string;
   roomTypeTags: RoomTypeTag[];
+  images?: RoomTypeImage[];
 }
 
 /**
  * Room Status
  */
 export type RoomStatus = "AVAILABLE" | "OCCUPIED" | "MAINTENANCE" | "RESERVED";
+
+/**
+ * Room Image - Image attached to individual room
+ */
+export interface RoomImage {
+  id: string;
+  roomId: string;
+  url: string;
+  secureUrl: string;
+  thumbnailUrl?: string;
+  cloudinaryId: string;
+  width?: number;
+  height?: number;
+  format?: string;
+  sortOrder: number;
+  isDefault: boolean;
+  createdAt: string;
+}
 
 /**
  * Room - Individual room entity
@@ -57,7 +93,8 @@ export interface Room {
   createdAt: string;
   updatedAt: string;
   roomType: RoomType;
-  _count: {
+  images?: RoomImage[];
+  _count?: {
     bookingRooms: number;
   };
 }

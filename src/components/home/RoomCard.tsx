@@ -2,6 +2,7 @@ import { Bed, Heart, Minus, Plus, Users } from "lucide-react-native";
 import { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import type { Room } from "../../types";
+import { CloudinaryImage } from "../CloudinaryImage";
 
 interface RoomCardProps {
   room: Room;
@@ -31,6 +32,11 @@ export default function RoomCard({
     ? allAmenities
     : allAmenities.slice(0, 3);
 
+  // Get default or first image from room type
+  const defaultImage = roomType.images?.find((img) => img.isDefault);
+  const firstImage = roomType.images?.[0];
+  const displayImage = defaultImage || firstImage;
+
   return (
     <TouchableOpacity
       style={styles.container}
@@ -38,11 +44,21 @@ export default function RoomCard({
       activeOpacity={0.7}
     >
       <View style={styles.card}>
-        {/* Image Placeholder */}
+        {/* Room Image */}
         <View style={styles.imageContainer}>
-          <View style={styles.placeholderImage}>
-            <Text style={styles.placeholderText}>Room Image</Text>
-          </View>
+          {displayImage ? (
+            <CloudinaryImage
+              src={displayImage.secureUrl || displayImage.url}
+              width={400}
+              transformation="c_fill,ar_3:2"
+              style={styles.roomImage}
+              contentFit="cover"
+            />
+          ) : (
+            <View style={styles.placeholderImage}>
+              <Text style={styles.placeholderText}>Room Image</Text>
+            </View>
+          )}
         </View>
 
         {/* Badges Row */}
@@ -150,6 +166,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#e8f4fd",
     justifyContent: "center",
     alignItems: "center",
+  },
+  roomImage: {
+    width: "100%",
+    height: "100%",
   },
   placeholderText: {
     fontSize: 12,

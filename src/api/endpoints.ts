@@ -51,3 +51,15 @@ export const PROMOTION_ENDPOINTS = {
   GET_MY_PROMOTIONS: "/customer/promotions/my-promotions",
   CLAIM_PROMOTION: "/customer/promotions/claim",
 } as const;
+
+/**
+ * Image Endpoints (Read-only for customer app)
+ * Customers can view images for rooms and room types
+ */
+export const IMAGE_ENDPOINTS = {
+  GET_ROOM_TYPE_IMAGES: (roomTypeId: string) =>
+    `/customer/room-types/${roomTypeId}/images`,
+  GET_SERVICE_IMAGES: (serviceId: string) =>
+    `/customer/services/${serviceId}/images`,
+  GET_ROOM_IMAGES: (roomId: string) => `/customer/rooms/${roomId}/images`,
+} as const;
