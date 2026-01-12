@@ -2,7 +2,10 @@ import BusinessCard from "@/src/components/home/BusinessCard";
 import DateGuestSelector from "@/src/components/home/DateGuestSelector";
 import DateRangePicker from "@/src/components/home/DateRangePicker";
 import FilterButton from "@/src/components/home/FilterButton";
-import FilterModal, { FilterState } from "@/src/components/home/FilterModal";
+import FilterModal, {
+  FilterState,
+  RoomTypeOption,
+} from "@/src/components/home/FilterModal";
 import RoomCard from "@/src/components/home/RoomCard";
 import SearchBar from "@/src/components/home/SearchBar";
 import { useRooms } from "@/src/hooks";
@@ -23,7 +26,6 @@ export default function HomeScreen() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [dateRange, setDateRange] = useState("Select Dates");
-  const [guests, setGuests] = useState(3);
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [checkInDate, setCheckInDate] = useState<Date | undefined>();
@@ -66,24 +68,54 @@ export default function HomeScreen() {
   // Extract rooms from grouped data structure
   // API returns: { data: { data: [{ roomType, availableCount, rooms: Room[] }] } }
   const roomGroups = roomsResponse?.data?.data ?? [];
-  let rooms = roomGroups.flatMap((group: any) => group.rooms ?? []);
 
-  // Apply client-side sorting
-  rooms = useMemo(() => {
-    const sortedRooms = [...rooms];
+  // Extract unique room types for filter options
+  const availableRoomTypes: RoomTypeOption[] = useMemo(() => {
+    return roomGroups.map((group: any) => ({
+      id: group.roomType.id,
+      name: group.roomType.name,
+    }));
+  }, [roomGroups]);
+
+  // Apply client-side sorting and room type filtering
+  const sortedRoomGroups = useMemo(() => {
+    let groups = [...roomGroups];
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      groups = groups.filter((group: any) =>
+        group.roomType.name.toLowerCase().includes(query)
+      );
+    }
+
+    // Filter by room type if any are selected
+    if (filters.roomTypeIds && filters.roomTypeIds.length > 0) {
+      groups = groups.filter((group: any) =>
+        filters.roomTypeIds?.includes(group.roomType.id)
+      );
+    }
+
+    // Apply sorting
     if (filters.sortBy === "price_asc") {
-      sortedRooms.sort(
-        (a, b) =>
+      groups.sort(
+        (a: any, b: any) =>
           parseFloat(a.roomType.basePrice) - parseFloat(b.roomType.basePrice)
       );
     } else if (filters.sortBy === "price_desc") {
-      sortedRooms.sort(
-        (a, b) =>
+      groups.sort(
+        (a: any, b: any) =>
           parseFloat(b.roomType.basePrice) - parseFloat(a.roomType.basePrice)
       );
     }
-    return sortedRooms;
-  }, [rooms, filters.sortBy]);
+    return groups;
+  }, [roomGroups, filters.sortBy, filters.roomTypeIds, searchQuery]);
+
+  // Count total rooms across all groups
+  const totalRooms = sortedRoomGroups.reduce(
+    (acc: number, group: any) => acc + (group.rooms?.length ?? 0),
+    0
+  );
 
   // Format error message
   const roomsError = useMemo(() => {
@@ -144,11 +176,6 @@ export default function HomeScreen() {
     setDateRange(`${checkInStr}-${checkOutStr}`);
   };
 
-  const handleGuestsPress = () => {
-    // TODO: Open guest selector modal
-    console.log("Open guest selector");
-  };
-
   const handleFilterPress = () => {
     setIsFilterVisible(true);
   };
@@ -193,9 +220,7 @@ export default function HomeScreen() {
         {/* Date and Guest Selector */}
         <DateGuestSelector
           dateRange={dateRange}
-          guests={guests}
           onDatePress={handleDatePress}
-          onGuestsPress={handleGuestsPress}
         />
 
         {/* Search Bar and Filter */}
@@ -229,26 +254,40 @@ export default function HomeScreen() {
               <Text style={styles.retryText}>Retry</Text>
             </TouchableOpacity>
           </View>
-        ) : rooms.length === 0 ? (
+        ) : totalRooms === 0 ? (
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>No rooms available</Text>
           </View>
         ) : (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.horizontalScroll}
-            contentContainerStyle={styles.horizontalScrollContent}
-          >
-            {rooms.map((room) => (
-              <RoomCard
-                key={room.id}
-                room={room}
-                onPress={() => handleRoomPress(room.id)}
-                onFavoritePress={() => handleFavoritePress(room.id)}
-              />
+          <View style={styles.roomsContainer}>
+            {sortedRoomGroups.map((group: any) => (
+              <View key={group.roomType.id} style={styles.roomTypeGroup}>
+                {/* Room Type Header */}
+                <View style={styles.roomTypeHeader}>
+                  <Text style={styles.roomTypeTitle}>
+                    {group.roomType.name}
+                  </Text>
+                  <Text style={styles.roomTypeCount}>
+                    {group.rooms?.length ?? 0} room
+                    {group.rooms?.length !== 1 ? "s" : ""}
+                  </Text>
+                </View>
+
+                {/* 2-Column Grid of Rooms */}
+                <View style={styles.roomsGrid}>
+                  {(group.rooms ?? []).map((room: any) => (
+                    <View key={room.id} style={styles.roomCardWrapper}>
+                      <RoomCard
+                        room={room}
+                        onPress={() => handleRoomPress(room.id)}
+                        onFavoritePress={() => handleFavoritePress(room.id)}
+                      />
+                    </View>
+                  ))}
+                </View>
+              </View>
             ))}
-          </ScrollView>
+          </View>
         )}
 
         {/* Business Accommodates Section */}
@@ -281,6 +320,7 @@ export default function HomeScreen() {
           onClose={() => setIsFilterVisible(false)}
           onApply={handleApplyFilters}
           initialFilters={filters}
+          roomTypes={availableRoomTypes}
         />
       </ScrollView>
     </SafeAreaView>
@@ -388,5 +428,37 @@ const styles = StyleSheet.create({
     fontFamily: "Roboto_400Regular",
     color: "#007ef2",
     textAlign: "center",
+  },
+  roomsContainer: {
+    paddingHorizontal: 20,
+  },
+  roomTypeGroup: {
+    marginBottom: 24,
+  },
+  roomTypeHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  roomTypeTitle: {
+    fontSize: 16,
+    fontFamily: "OpenSans_600SemiBold",
+    color: "#333",
+  },
+  roomTypeCount: {
+    fontSize: 12,
+    fontFamily: "Roboto_400Regular",
+    color: "#7f7f7f",
+  },
+  roomsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginHorizontal: -6,
+  },
+  roomCardWrapper: {
+    width: "50%",
+    paddingHorizontal: 6,
+    marginBottom: 12,
   },
 });

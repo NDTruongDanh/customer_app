@@ -1,5 +1,5 @@
 import MultiSlider from "@ptomasroos/react-native-multi-slider";
-import { ChevronDown, Minus, Plus, X } from "lucide-react-native";
+import { Check, ChevronDown, Minus, Plus, X } from "lucide-react-native";
 import { useState } from "react";
 import {
   Modal,
@@ -13,6 +13,11 @@ import {
 
 export type SortOption = "price_asc" | "price_desc" | "rating_desc";
 
+export interface RoomTypeOption {
+  id: string;
+  name: string;
+}
+
 export interface FilterState {
   sortBy: SortOption;
   minPrice: number;
@@ -20,6 +25,7 @@ export interface FilterState {
   floor?: number;
   minCapacity?: number;
   maxCapacity?: number;
+  roomTypeIds?: string[];
 }
 
 interface FilterModalProps {
@@ -27,6 +33,7 @@ interface FilterModalProps {
   onClose: () => void;
   onApply: (filters: FilterState) => void;
   initialFilters?: Partial<FilterState>;
+  roomTypes?: RoomTypeOption[];
 }
 
 const SORT_OPTIONS: { label: string; value: SortOption }[] = [
@@ -39,6 +46,7 @@ const DEFAULT_FILTERS: FilterState = {
   sortBy: "price_asc",
   minPrice: 500000,
   maxPrice: 5000000,
+  roomTypeIds: [],
 };
 
 // Format number to Vietnamese Dong with thousand separators
@@ -58,6 +66,7 @@ export default function FilterModal({
   onClose,
   onApply,
   initialFilters,
+  roomTypes = [],
 }: FilterModalProps) {
   const [filters, setFilters] = useState<FilterState>({
     ...DEFAULT_FILTERS,
@@ -104,6 +113,21 @@ export default function FilterModal({
         : Math.max(1, (prev.maxCapacity || 1) - 1);
       return { ...prev, maxCapacity: newMax };
     });
+  };
+
+  const handleRoomTypeToggle = (roomTypeId: string) => {
+    setFilters((prev) => {
+      const currentIds = prev.roomTypeIds || [];
+      const isSelected = currentIds.includes(roomTypeId);
+      const newIds = isSelected
+        ? currentIds.filter((id) => id !== roomTypeId)
+        : [...currentIds, roomTypeId];
+      return { ...prev, roomTypeIds: newIds };
+    });
+  };
+
+  const isRoomTypeSelected = (roomTypeId: string): boolean => {
+    return filters.roomTypeIds?.includes(roomTypeId) ?? false;
   };
 
   const handleReset = () => {
@@ -189,6 +213,44 @@ export default function FilterModal({
                 </View>
               )}
             </View>
+
+            {/* Room Type Section */}
+            {roomTypes.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Room Type</Text>
+                <View style={styles.roomTypeGrid}>
+                  {roomTypes.map((roomType) => (
+                    <TouchableOpacity
+                      key={roomType.id}
+                      style={[
+                        styles.roomTypeChip,
+                        isRoomTypeSelected(roomType.id) &&
+                          styles.roomTypeChipSelected,
+                      ]}
+                      onPress={() => handleRoomTypeToggle(roomType.id)}
+                    >
+                      <Text
+                        style={[
+                          styles.roomTypeChipText,
+                          isRoomTypeSelected(roomType.id) &&
+                            styles.roomTypeChipTextSelected,
+                        ]}
+                      >
+                        {roomType.name}
+                      </Text>
+                      {isRoomTypeSelected(roomType.id) && (
+                        <Check size={14} color="#fff" />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                {(filters.roomTypeIds?.length ?? 0) > 0 && (
+                  <Text style={styles.selectedCount}>
+                    {filters.roomTypeIds?.length} selected
+                  </Text>
+                )}
+              </View>
+            )}
 
             {/* Price Range Section */}
             <View style={styles.section}>
@@ -390,6 +452,41 @@ const styles = StyleSheet.create({
   dropdownItemTextActive: {
     color: "#007ef2",
     fontFamily: "Roboto_700Bold",
+  },
+  roomTypeGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  roomTypeChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderWidth: 1,
+    borderColor: "#d3d3d3",
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    backgroundColor: "#fff",
+  },
+  roomTypeChipSelected: {
+    backgroundColor: "#007ef2",
+    borderColor: "#007ef2",
+  },
+  roomTypeChipText: {
+    fontSize: 14,
+    color: "#333",
+    fontFamily: "Roboto_400Regular",
+  },
+  roomTypeChipTextSelected: {
+    color: "#fff",
+    fontFamily: "Roboto_500Medium",
+  },
+  selectedCount: {
+    fontSize: 12,
+    color: "#007ef2",
+    fontFamily: "Roboto_400Regular",
+    marginTop: 8,
   },
   priceRangeContainer: {
     paddingVertical: 8,

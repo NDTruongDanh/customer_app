@@ -1,31 +1,23 @@
-import { Calendar, Users } from "lucide-react-native";
+import { Calendar } from "lucide-react-native";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 interface DateGuestSelectorProps {
   dateRange: string;
-  guests: number;
   onDatePress: () => void;
-  onGuestsPress: () => void;
+  // Keep these props for backwards compatibility but they're optional now
+  guests?: number;
+  onGuestsPress?: () => void;
 }
 
 export default function DateGuestSelector({
   dateRange,
-  guests,
   onDatePress,
-  onGuestsPress,
 }: DateGuestSelectorProps) {
   return (
     <View style={styles.container}>
       <TouchableOpacity style={styles.button} onPress={onDatePress}>
         <Calendar size={14} color="#007ef2" />
         <Text style={styles.buttonText}>{dateRange}</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.button} onPress={onGuestsPress}>
-        <Users size={14} color="#007ef2" />
-        <Text style={styles.buttonText}>
-          {guests} {guests === 1 ? "guest" : "guests"}
-        </Text>
       </TouchableOpacity>
     </View>
   );

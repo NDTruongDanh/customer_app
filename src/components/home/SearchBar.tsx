@@ -10,7 +10,7 @@ interface SearchBarProps {
 export default function SearchBar({
   value,
   onChangeText,
-  placeholder = "Search Hotel By Name",
+  placeholder = "Search",
 }: SearchBarProps) {
   return (
     <View style={styles.container}>

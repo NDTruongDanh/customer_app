@@ -7,6 +7,7 @@ import type { CartItem } from "@/src/types";
 import { Bed, Calendar, Minus, Plus, Trash2, Users } from "lucide-react-native";
 import { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { CloudinaryImage } from "../CloudinaryImage";
 
 interface CartItemCardProps {
   item: CartItem;
@@ -57,14 +58,29 @@ export default function CartItemCard({
     }
   };
 
+  // Get default or first image from room type
+  const defaultImage = room.roomType.images?.find((img) => img.isDefault);
+  const firstImage = room.roomType.images?.[0];
+  const displayImage = defaultImage || firstImage;
+
   return (
     <View style={styles.container}>
       <View style={styles.card}>
-        {/* Image Placeholder */}
+        {/* Room Image */}
         <View style={styles.imageContainer}>
-          <View style={styles.placeholderImage}>
-            <Text style={styles.placeholderText}>Room</Text>
-          </View>
+          {displayImage ? (
+            <CloudinaryImage
+              src={displayImage.secureUrl || displayImage.url}
+              width={400}
+              transformation="c_fill,ar_3:2"
+              style={styles.roomImage}
+              contentFit="cover"
+            />
+          ) : (
+            <View style={styles.placeholderImage}>
+              <Text style={styles.placeholderText}>Room</Text>
+            </View>
+          )}
         </View>
 
         {/* Room Details */}
@@ -189,6 +205,10 @@ const styles = StyleSheet.create({
     color: "#007ef2",
     fontSize: 14,
     fontWeight: "500",
+  },
+  roomImage: {
+    width: "100%",
+    height: "100%",
   },
   detailsContainer: {
     padding: 16,

@@ -79,13 +79,14 @@ export default function RoomCard({
           </TouchableOpacity>
         </View>
 
+        {/* Room Number (Primary Header) */}
+        <Text style={styles.roomNumber}>Room {roomNumber}</Text>
+
+        {/* Floor */}
+        <Text style={styles.floorText}>Floor {floor}</Text>
+
         {/* Room Type Name */}
         <Text style={styles.roomTypeName}>{roomType.name}</Text>
-
-        {/* Room Number & Floor */}
-        <Text style={styles.roomDetails}>
-          Room {roomNumber} • Floor {floor}
-        </Text>
 
         {/* Capacity & Beds */}
         <View style={styles.detailsRow}>
@@ -137,10 +138,10 @@ export default function RoomCard({
 
 const styles = StyleSheet.create({
   container: {
-    marginRight: 12,
+    flex: 1,
   },
   card: {
-    width: 197,
+    width: "100%",
     backgroundColor: "#fff",
     borderRadius: 10,
     paddingBottom: 12,
@@ -193,7 +194,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 200, 83, 0.12)",
   },
   statusText: {
-    fontSize: 7,
+    fontSize: 9,
     color: "#7f7f7f",
     fontFamily: "OpenSans_400Regular",
     textTransform: "capitalize",
@@ -201,18 +202,25 @@ const styles = StyleSheet.create({
   favoriteButton: {
     marginLeft: "auto",
   },
-  roomTypeName: {
-    fontSize: 14,
+  roomNumber: {
+    fontSize: 18,
     fontFamily: "Roboto_700Bold",
-    color: "rgba(0, 0, 0, 0.81)",
+    color: "#007ef2",
     marginTop: 8,
     paddingHorizontal: 8,
   },
-  roomDetails: {
-    fontSize: 10,
+  floorText: {
+    fontSize: 12,
     fontFamily: "Roboto_400Regular",
     color: "#7f7f7f",
     marginTop: 2,
+    paddingHorizontal: 8,
+  },
+  roomTypeName: {
+    fontSize: 13,
+    fontFamily: "Roboto_500Medium",
+    color: "rgba(0, 0, 0, 0.81)",
+    marginTop: 4,
     paddingHorizontal: 8,
   },
   detailsRow: {
@@ -228,8 +236,8 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   detailText: {
-    fontSize: 9,
-    fontFamily: "Roboto_300Light",
+    fontSize: 11,
+    fontFamily: "Roboto_400Regular",
     color: "#7f7f7f",
   },
   amenitiesRow: {
@@ -246,17 +254,18 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   amenityText: {
-    fontSize: 7,
+    fontSize: 9,
     color: "#007ef2",
     fontFamily: "OpenSans_400Regular",
   },
   priceText: {
     marginTop: 8,
     paddingHorizontal: 8,
-    fontSize: 10,
-    fontFamily: "Roboto_300Light",
+    fontSize: 13,
+    fontFamily: "Roboto_400Regular",
   },
   priceHighlight: {
+    fontSize: 14,
     fontFamily: "Roboto_700Bold",
     color: "#007ef2",
   },

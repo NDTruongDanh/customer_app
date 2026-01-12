@@ -3,6 +3,7 @@
  * Full booking summary after proceeding from cart to checkout
  */
 
+import { CloudinaryImage } from "@/src/components/CloudinaryImage";
 import { useCart } from "@/src/context/CartContext";
 import bookingService from "@/src/services/booking.service";
 import type { CreateBookingRequest } from "@/src/types/booking.types";
@@ -12,7 +13,6 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Image,
   Platform,
   ScrollView,
   StyleSheet,
@@ -160,69 +160,84 @@ export default function BookingSummaryScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* Room Cards */}
-          {cartItems.map((item, index) => (
-            <View key={item.id} style={styles.roomCard}>
-              {/* Room Image and Info */}
-              <View style={styles.roomHeader}>
-                <Image
-                  source={{
-                    uri: "https://via.placeholder.com/115x78",
-                  }}
-                  style={styles.roomImage}
-                  resizeMode="cover"
-                />
-                <View style={styles.roomInfo}>
-                  <Text style={styles.roomName} numberOfLines={1}>
-                    {item.room.roomType?.name || "Room"}
-                  </Text>
-                  <Text style={styles.roomLocation} numberOfLines={1}>
-                    Floor {item.room.floor} • Room {item.room.roomNumber}
-                  </Text>
-                  <Text style={styles.roomPrice}>
-                    {parseFloat(
-                      item.room.roomType?.basePrice || "0"
-                    ).toLocaleString("en-US")}{" "}
-                    VND
-                    <Text style={styles.roomPriceUnit}> /night</Text>
-                  </Text>
+          {cartItems.map((item, index) => {
+            // Get default or first image from room type
+            const defaultImage = item.room.roomType?.images?.find(
+              (img) => img.isDefault
+            );
+            const firstImage = item.room.roomType?.images?.[0];
+            const displayImage = defaultImage || firstImage;
+
+            return (
+              <View key={item.id} style={styles.roomCard}>
+                {/* Room Image and Info */}
+                <View style={styles.roomHeader}>
+                  {displayImage ? (
+                    <CloudinaryImage
+                      src={displayImage.secureUrl || displayImage.url}
+                      width={230}
+                      transformation="c_fill,ar_3:2"
+                      style={styles.roomImage}
+                      contentFit="cover"
+                    />
+                  ) : (
+                    <View style={styles.roomImagePlaceholder}>
+                      <Text style={styles.roomImagePlaceholderText}>Room</Text>
+                    </View>
+                  )}
+                  <View style={styles.roomInfo}>
+                    <Text style={styles.roomName} numberOfLines={1}>
+                      {item.room.roomType?.name || "Room"}
+                    </Text>
+                    <Text style={styles.roomLocation} numberOfLines={1}>
+                      Floor {item.room.floor} • Room {item.room.roomNumber}
+                    </Text>
+                    <Text style={styles.roomPrice}>
+                      {parseFloat(
+                        item.room.roomType?.basePrice || "0"
+                      ).toLocaleString("en-US")}{" "}
+                      VND
+                      <Text style={styles.roomPriceUnit}> /night</Text>
+                    </Text>
+                  </View>
                 </View>
+
+                {/* Booking Details */}
+                <View style={styles.detailsSection}>
+                  {/* Booking Date Label */}
+                  <Text style={styles.sectionLabel}>Booking Date</Text>
+                  <Text style={styles.sectionValue}>
+                    {formatDate(new Date())}
+                  </Text>
+
+                  {/* Check-in */}
+                  <Text style={styles.sectionLabel}>Check-in</Text>
+                  <Text style={styles.sectionValue}>
+                    {formatDate(item.checkInDate)}
+                  </Text>
+
+                  {/* Check-out */}
+                  <Text style={styles.sectionLabel}>Check-out</Text>
+                  <Text style={styles.sectionValue}>
+                    {formatDate(item.checkOutDate)}
+                  </Text>
+
+                  {/* Guests */}
+                  <Text style={styles.sectionLabel}>Guests</Text>
+                  <Text style={styles.sectionValue}>{item.numberOfGuests}</Text>
+
+                  {/* Room(s) */}
+                  <Text style={styles.sectionLabel}>Room(s)</Text>
+                  <Text style={styles.sectionValue}>1</Text>
+                </View>
+
+                {/* Divider between rooms */}
+                {index < cartItems.length - 1 && (
+                  <View style={styles.roomDivider} />
+                )}
               </View>
-
-              {/* Booking Details */}
-              <View style={styles.detailsSection}>
-                {/* Booking Date Label */}
-                <Text style={styles.sectionLabel}>Booking Date</Text>
-                <Text style={styles.sectionValue}>
-                  {formatDate(new Date())}
-                </Text>
-
-                {/* Check-in */}
-                <Text style={styles.sectionLabel}>Check-in</Text>
-                <Text style={styles.sectionValue}>
-                  {formatDate(item.checkInDate)}
-                </Text>
-
-                {/* Check-out */}
-                <Text style={styles.sectionLabel}>Check-out</Text>
-                <Text style={styles.sectionValue}>
-                  {formatDate(item.checkOutDate)}
-                </Text>
-
-                {/* Guests */}
-                <Text style={styles.sectionLabel}>Guests</Text>
-                <Text style={styles.sectionValue}>{item.numberOfGuests}</Text>
-
-                {/* Room(s) */}
-                <Text style={styles.sectionLabel}>Room(s)</Text>
-                <Text style={styles.sectionValue}>1</Text>
-              </View>
-
-              {/* Divider between rooms */}
-              {index < cartItems.length - 1 && (
-                <View style={styles.roomDivider} />
-              )}
-            </View>
-          ))}
+            );
+          })}
 
           {/* Price Breakdown */}
           <View style={styles.priceSection}>
@@ -354,6 +369,21 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     borderColor: "#ffd700",
+  },
+  roomImagePlaceholder: {
+    width: 115,
+    height: 78,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#ffd700",
+    backgroundColor: "#e5f3ff",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  roomImagePlaceholderText: {
+    color: "#007ef2",
+    fontSize: 12,
+    fontWeight: "500",
   },
   roomInfo: {
     flex: 1,
