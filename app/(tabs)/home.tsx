@@ -11,7 +11,7 @@ import SearchBar from "@/src/components/home/SearchBar";
 import { useRooms } from "@/src/hooks";
 import { useRouter } from "expo-router";
 import { Bell } from "lucide-react-native";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   ScrollView,
@@ -35,6 +35,12 @@ export default function HomeScreen() {
     minPrice: 500000,
     maxPrice: 5000000,
   });
+
+  useEffect(() => {
+    if (!checkInDate || !checkOutDate) {
+      setIsDatePickerVisible(true);
+    }
+  }, []);
 
   // Build search params for rooms query
   const searchParams = useMemo(() => {

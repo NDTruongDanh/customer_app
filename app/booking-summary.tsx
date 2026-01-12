@@ -8,7 +8,7 @@ import { useCart } from "@/src/context/CartContext";
 import bookingService from "@/src/services/booking.service";
 import type { CreateBookingRequest } from "@/src/types/booking.types";
 import { useRouter } from "expo-router";
-import { ArrowLeft } from "lucide-react-native";
+import { ArrowLeft, Minus, Plus } from "lucide-react-native";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -33,7 +33,7 @@ const formatDate = (date: Date | null): string => {
 
 export default function BookingSummaryScreen() {
   const router = useRouter();
-  const { cartItems, getCartTotal, clearCart } = useCart();
+  const { cartItems, getCartTotal, clearCart, updateCartItem } = useCart();
   const [isLoading, setIsLoading] = useState(false);
 
   const subtotal = getCartTotal();
@@ -223,8 +223,67 @@ export default function BookingSummaryScreen() {
                   </Text>
 
                   {/* Guests */}
-                  <Text style={styles.sectionLabel}>Guests</Text>
-                  <Text style={styles.sectionValue}>{item.numberOfGuests}</Text>
+                  <View style={styles.guestSection}>
+                    <Text style={styles.sectionLabel}>Guests</Text>
+                    <View style={styles.guestCounter}>
+                      <TouchableOpacity
+                        onPress={() => {
+                          if (item.numberOfGuests > 1) {
+                            updateCartItem(item.id, {
+                              numberOfGuests: item.numberOfGuests - 1,
+                            });
+                          }
+                        }}
+                        style={[
+                          styles.counterButton,
+                          item.numberOfGuests <= 1 &&
+                            styles.counterButtonDisabled,
+                        ]}
+                        disabled={item.numberOfGuests <= 1}
+                      >
+                        <Minus
+                          size={16}
+                          color={item.numberOfGuests <= 1 ? "#ccc" : "#007ef2"}
+                        />
+                      </TouchableOpacity>
+                      <Text style={styles.guestCount}>
+                        {item.numberOfGuests}
+                      </Text>
+                      <TouchableOpacity
+                        onPress={() => {
+                          const maxGuests = item.room.roomType?.capacity || 4;
+                          if (item.numberOfGuests < maxGuests) {
+                            updateCartItem(item.id, {
+                              numberOfGuests: item.numberOfGuests + 1,
+                            });
+                          }
+                        }}
+                        style={[
+                          styles.counterButton,
+                          item.numberOfGuests >=
+                            (item.room.roomType?.capacity || 4) &&
+                            styles.counterButtonDisabled,
+                        ]}
+                        disabled={
+                          item.numberOfGuests >=
+                          (item.room.roomType?.capacity || 4)
+                        }
+                      >
+                        <Plus
+                          size={16}
+                          color={
+                            item.numberOfGuests >=
+                            (item.room.roomType?.capacity || 4)
+                              ? "#ccc"
+                              : "#007ef2"
+                          }
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                  <Text style={styles.maxGuestsText}>
+                    Max {item.room.roomType?.capacity || 4} guests
+                  </Text>
 
                   {/* Room(s) */}
                   <Text style={styles.sectionLabel}>Room(s)</Text>
@@ -517,5 +576,37 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "rgba(255, 255, 255, 0.88)",
     letterSpacing: 0.5,
+  },
+  guestSection: {
+    marginTop: 12,
+  },
+  guestCounter: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
+    gap: 12,
+  },
+  counterButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#e5f3ff",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  counterButtonDisabled: {
+    backgroundColor: "#f5f5f5",
+  },
+  guestCount: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#252424",
+    minWidth: 20,
+    textAlign: "center",
+  },
+  maxGuestsText: {
+    fontSize: 12,
+    color: "#7f7f7f",
+    marginTop: 4,
   },
 });
