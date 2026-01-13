@@ -5,6 +5,7 @@
  */
 
 import CloudinaryImage from "@/src/components/CloudinaryImage";
+import { useRoomDetails } from "@/src/hooks/useRooms";
 import bookingService from "@/src/services/booking.service";
 import { Booking, BookingStatus } from "@/src/types/booking.types";
 import { showAlert } from "@/src/utils/alert";
@@ -16,6 +17,7 @@ import {
   Calendar,
   CreditCard,
   MapPin,
+  Tag,
   Users,
 } from "lucide-react-native";
 import React, { useState } from "react";
@@ -42,6 +44,12 @@ export default function BookingDetailScreen() {
     ? JSON.parse(params.booking as string)
     : null;
 
+  const firstRoom = booking?.bookingRooms?.[0];
+
+  const { data: roomDetails } = useRoomDetails(firstRoom?.roomId, {
+    enabled: !!firstRoom?.roomId,
+  });
+
   if (!booking) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -59,7 +67,6 @@ export default function BookingDetailScreen() {
     );
   }
 
-  const firstRoom = booking.bookingRooms[0];
   const roomType = firstRoom?.roomType;
   const room = firstRoom?.room;
 
@@ -220,6 +227,21 @@ export default function BookingDetailScreen() {
                 Booking Code: {booking.bookingCode}
               </Text>
             </View>
+
+            {/* Room Tags */}
+            {roomDetails?.data?.roomType?.roomTypeTags &&
+              roomDetails.data.roomType.roomTypeTags.length > 0 && (
+                <View style={styles.section}>
+                  <View style={styles.tagsContainer}>
+                    {roomDetails.data.roomType.roomTypeTags.map((tag) => (
+                      <View key={tag.id} style={styles.tagBadge}>
+                        <Tag size={12} color="#0284c7" style={styles.tagIcon} />
+                        <Text style={styles.tagText}>{tag.roomTag.name}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
 
             {/* Dates */}
             <View style={styles.section}>
@@ -584,5 +606,29 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "700",
     color: "#fff",
+  },
+  tagsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: -8, // Pull closer to title section
+  },
+  tagBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#e0f2fe",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#bae6fd",
+  },
+  tagIcon: {
+    marginRight: 4,
+  },
+  tagText: {
+    fontSize: 12,
+    color: "#0284c7",
+    fontWeight: "600",
   },
 });
