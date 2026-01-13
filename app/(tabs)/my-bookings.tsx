@@ -1,9 +1,11 @@
 import { useBookings } from "@/src/hooks/useBookings";
+import bookingService from "@/src/services/booking.service";
 import { Booking, BookingStatus } from "@/src/types/booking.types";
+import { showAlert, showConfirm } from "@/src/utils/alert";
 import { format } from "date-fns";
 import { Image } from "expo-image";
 import { Stack, useRouter } from "expo-router";
-import { Calendar } from "lucide-react-native";
+import { Calendar, X } from "lucide-react-native";
 import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -62,6 +64,36 @@ export default function MyBookingsScreen() {
           hideBottomBar: "true",
         },
       });
+    }
+  };
+
+  const handleCancelBooking = async (
+    booking: Booking,
+    event: any
+  ): Promise<void> => {
+    // Prevent navigation when clicking cancel button
+    event.stopPropagation();
+
+    const confirmed = await showConfirm(
+      "Cancel Booking",
+      `Are you sure you want to cancel booking ${booking.bookingCode}? This action cannot be undone.`,
+      "Cancel Booking",
+      "Keep Booking"
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await bookingService.cancelBooking(booking.id);
+      // Refetch bookings to update the list
+      refetch();
+    } catch (error: any) {
+      console.error("Cancel booking error:", error);
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to cancel booking. Please try again.";
+      showAlert("Error", errorMessage);
     }
   };
 
@@ -139,9 +171,21 @@ export default function MyBookingsScreen() {
               </Text>
             </View>
 
-            <Text style={styles.price}>
-              {parseInt(item.totalAmount).toLocaleString("vi-VN")} VND
-            </Text>
+            <View style={styles.priceRow}>
+              <Text style={styles.price}>
+                {parseInt(item.totalAmount).toLocaleString("vi-VN")} VND
+              </Text>
+              {item.status === "PENDING" && (
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={(e) => handleCancelBooking(item, e)}
+                  activeOpacity={0.7}
+                >
+                  <X size={16} color="#dc2626" />
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         </View>
       </TouchableOpacity>
@@ -330,12 +374,30 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#6b7280",
   },
+  priceRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 8,
+  },
   price: {
     fontSize: 16,
     fontWeight: "700",
     color: "#007ef2",
-    marginTop: 8,
-    textAlign: "right",
+  },
+  cancelButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fee2e2",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 4,
+  },
+  cancelButtonText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#dc2626",
   },
   centerContainer: {
     flex: 1,

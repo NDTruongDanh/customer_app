@@ -1,5 +1,6 @@
 import { useProfile, useUpdateProfile } from "@/src/hooks";
 import type { Customer } from "@/src/types";
+import { editProfileSchema, validateForm } from "@/src/utils/validation";
 import { useRouter } from "expo-router";
 import { ArrowLeft, Save } from "lucide-react-native";
 import { useEffect, useState } from "react";
@@ -15,6 +16,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import type { z } from "zod";
 
 export default function EditProfileScreen() {
   const router = useRouter();
@@ -28,6 +30,7 @@ export default function EditProfileScreen() {
   const [email, setEmail] = useState("");
   const [idNumber, setIdNumber] = useState("");
   const [address, setAddress] = useState("");
+  const [errors, setErrors] = useState<z.ZodIssue[] | undefined>(undefined);
 
   // Original data for comparison
   const [originalData, setOriginalData] = useState<Customer | null>(null);
@@ -44,6 +47,33 @@ export default function EditProfileScreen() {
     }
   }, [profileResponse]);
 
+  // Clear field error when user types
+  const clearFieldError = (field: string) => {
+    if (errors) {
+      setErrors(errors.filter((e) => !e.path.includes(field)));
+    }
+  };
+
+  const handleFullNameChange = (value: string) => {
+    setFullName(value);
+    clearFieldError("fullName");
+  };
+
+  const handleEmailChange = (value: string) => {
+    setEmail(value);
+    clearFieldError("email");
+  };
+
+  const handleIdNumberChange = (value: string) => {
+    setIdNumber(value);
+    clearFieldError("idNumber");
+  };
+
+  const handleAddressChange = (value: string) => {
+    setAddress(value);
+    clearFieldError("address");
+  };
+
   const hasChanges = () => {
     if (!originalData) return false;
     return (
@@ -54,46 +84,36 @@ export default function EditProfileScreen() {
     );
   };
 
-  const validateForm = () => {
-    // Basic email validation only if email is provided
-    if (email.trim()) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        Alert.alert("Validation Error", "Please enter a valid email address");
-        return false;
-      }
-    }
-
-    return true;
-  };
-
   const handleSave = () => {
-    if (!validateForm()) return;
-
-    if (!hasChanges()) {
-      Alert.alert("No Changes", "No changes were made to your profile");
-      return;
-    }
-
-    const updateData = {
+    // Prepare data (only include non-empty values)
+    const formData = {
       fullName: fullName.trim() || undefined,
       email: email.trim() || undefined,
       idNumber: idNumber.trim() || undefined,
       address: address.trim() || undefined,
     };
 
-    updateProfileMutation.mutate(updateData, {
+    // Validate using Zod
+    const result = validateForm(editProfileSchema, formData);
+
+    if (!result.success) {
+      setErrors(result.errors);
+      // Show the first error as an alert
+      const firstError = result.errors[0];
+      Alert.alert("Validation Error", firstError.message);
+      return;
+    }
+
+    setErrors(undefined);
+
+    if (!hasChanges()) {
+      Alert.alert("No Changes", "No changes were made to your profile");
+      return;
+    }
+
+    updateProfileMutation.mutate(result.data, {
       onSuccess: () => {
-        Alert.alert("Success", "Profile updated successfully!", [
-          {
-            text: "OK",
-            onPress: () => router.back(),
-          },
-        ]);
-        // Auto-redirect after a short delay to ensure alert is shown
-        setTimeout(() => {
-          router.back();
-        }, 500);
+        router.back();
       },
       onError: (error: any) => {
         console.error("Error updating profile:", error);
@@ -170,7 +190,7 @@ export default function EditProfileScreen() {
             <TextInput
               style={styles.input}
               value={fullName}
-              onChangeText={setFullName}
+              onChangeText={handleFullNameChange}
               placeholder="Enter your full name"
               placeholderTextColor="#999"
               autoCapitalize="words"
@@ -184,7 +204,7 @@ export default function EditProfileScreen() {
             <TextInput
               style={styles.input}
               value={email}
-              onChangeText={setEmail}
+              onChangeText={handleEmailChange}
               placeholder="Enter your email"
               placeholderTextColor="#999"
               keyboardType="email-address"
@@ -199,7 +219,7 @@ export default function EditProfileScreen() {
             <TextInput
               style={styles.input}
               value={idNumber}
-              onChangeText={setIdNumber}
+              onChangeText={handleIdNumberChange}
               placeholder="Enter your ID number"
               placeholderTextColor="#999"
               editable={!saving}
@@ -212,7 +232,7 @@ export default function EditProfileScreen() {
             <TextInput
               style={[styles.input, styles.textArea]}
               value={address}
-              onChangeText={setAddress}
+              onChangeText={handleAddressChange}
               placeholder="Enter your address"
               placeholderTextColor="#999"
               multiline

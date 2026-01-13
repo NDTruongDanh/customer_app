@@ -36,9 +36,17 @@ export const getBookings = async (
   return response.data;
 };
 
+/**
+ * Cancel a booking
+ */
+export const cancelBooking = async (bookingId: string): Promise<void> => {
+  await api.post(`/customer/bookings/${bookingId}/cancel`);
+};
+
 const bookingService = {
   createBooking,
   getBookings,
+  cancelBooking,
 };
 
 export default bookingService;

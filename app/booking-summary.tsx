@@ -88,25 +88,8 @@ export default function BookingSummaryScreen() {
       // Success! Clear the cart and show success message
       clearCart();
 
-      Alert.alert(
-        "Booking Successful!",
-        `Your booking has been created successfully.\n\nBooking Code: ${
-          response.data.bookingCode
-        }\nTotal Amount: ${response.data.totalAmount.toLocaleString(
-          "en-US"
-        )} VND\n\nPlease complete payment before ${formatDate(
-          new Date(response.data.expiresAt)
-        )}.`,
-        [
-          {
-            text: "OK",
-            onPress: () => {
-              // Navigate to bookings list or home
-              router.push("/(tabs)/home");
-            },
-          },
-        ]
-      );
+      // Navigate to my bookings to see the newly created booking
+      router.push("/(tabs)/my-bookings");
     } catch (error: any) {
       console.error("Booking error:", error);
       console.error("Error response:", error.response?.data);

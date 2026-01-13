@@ -13,6 +13,11 @@ export interface Customer {
   phone: string;
   idNumber: string | null;
   address: string | null;
+  imageUrl: string | null;
+  isEmailVerified: boolean;
+  emailVerificationToken: string | null;
+  rankId: string | null;
+  totalSpent: string;
   createdAt: string;
   updatedAt: string;
 }

@@ -79,10 +79,6 @@ export default function RoomDetailsScreen() {
     }
 
     addToCart(room, checkInDate, checkOutDate, numberOfGuests);
-    showAlert(
-      "Added to Cart",
-      `${room.roomType.name} has been added to your cart`
-    );
   };
 
   const handleGoToCart = () => {

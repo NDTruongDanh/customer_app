@@ -53,8 +53,8 @@ export default function ProfileScreen() {
 
     logoutMutation.mutate(undefined, {
       onSuccess: () => {
-        showAlert("Success", "Logged out successfully!");
         router.replace("/welcome");
+        // Also remove the commented out showAlert if it was there (it wasn't commented out in the file I read, but just to be safe I'm replacing the whole block)
       },
       onError: () => {
         showAlert("Logged Out", "You have been logged out.");
@@ -134,7 +134,28 @@ export default function ProfileScreen() {
                   <Mail size={20} color="#007ef2" />
                 </View>
                 <View style={styles.infoTextContainer}>
-                  <Text style={styles.infoLabel}>Email Address</Text>
+                  <View style={styles.emailHeader}>
+                    <Text style={styles.infoLabel}>Email Address</Text>
+                    <View
+                      style={[
+                        styles.verificationBadge,
+                        profile?.isEmailVerified
+                          ? styles.verifiedBadge
+                          : styles.unverifiedBadge,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.verificationBadgeText,
+                          profile?.isEmailVerified
+                            ? styles.verifiedText
+                            : styles.unverifiedText,
+                        ]}
+                      >
+                        {profile?.isEmailVerified ? "Verified" : "Not Verified"}
+                      </Text>
+                    </View>
+                  </View>
                   <Text style={styles.infoValue}>
                     {profile?.email || "N/A"}
                   </Text>
@@ -185,13 +206,17 @@ export default function ProfileScreen() {
           {/* Account Statistics */}
           <View style={styles.statsContainer}>
             <View style={styles.statBox}>
-              <Text style={styles.statValue}>-</Text>
-              <Text style={styles.statLabel}>Total Bookings</Text>
+              <Text style={styles.statValue}>
+                ${parseFloat(profile?.totalSpent || "0").toFixed(2)}
+              </Text>
+              <Text style={styles.statLabel}>Total Spent</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statBox}>
-              <Text style={styles.statValue}>-</Text>
-              <Text style={styles.statLabel}>Active Bookings</Text>
+              <Text style={styles.statValue}>
+                {profile?.rankId ? "Member" : "Guest"}
+              </Text>
+              <Text style={styles.statLabel}>Membership</Text>
             </View>
           </View>
 
@@ -426,5 +451,32 @@ const styles = StyleSheet.create({
   },
   bottomSpacing: {
     height: 100,
+  },
+  emailHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  verificationBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  verifiedBadge: {
+    backgroundColor: "rgba(76, 175, 80, 0.12)",
+  },
+  unverifiedBadge: {
+    backgroundColor: "rgba(255, 152, 0, 0.12)",
+  },
+  verificationBadgeText: {
+    fontSize: 10,
+    fontFamily: "Roboto_500Medium",
+  },
+  verifiedText: {
+    color: "#4CAF50",
+  },
+  unverifiedText: {
+    color: "#FF9800",
   },
 });

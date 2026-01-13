@@ -1,13 +1,13 @@
 import { useRegister } from "@/src/hooks";
 import type { RegisterData } from "@/src/types";
 import { showAlert } from "@/src/utils/alert";
+import { signupSchema, validateForm } from "@/src/utils/validation";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Eye, EyeOff, Lock, Mail, Phone, User } from "lucide-react-native";
 import { useState } from "react";
 import {
   ActivityIndicator,
-  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -18,6 +18,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import type { z } from "zod";
 
 export default function SignupScreen() {
   const router = useRouter();
@@ -28,38 +29,70 @@ export default function SignupScreen() {
   const [phone, setPhone] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [errors, setErrors] = useState<z.ZodIssue[] | undefined>(undefined);
 
   const registerMutation = useRegister();
 
+  // Clear field error when user types
+  const clearFieldError = (field: string) => {
+    if (errors) {
+      setErrors(errors.filter((e) => !e.path.includes(field)));
+    }
+  };
+
+  const handleFullNameChange = (value: string) => {
+    setFullName(value);
+    clearFieldError("fullName");
+  };
+
+  const handleEmailChange = (value: string) => {
+    setEmail(value);
+    clearFieldError("email");
+  };
+
+  const handlePhoneChange = (value: string) => {
+    setPhone(value);
+    clearFieldError("phone");
+  };
+
+  const handlePasswordChange = (value: string) => {
+    setPassword(value);
+    clearFieldError("password");
+  };
+
+  const handleConfirmPasswordChange = (value: string) => {
+    setConfirmPassword(value);
+    clearFieldError("confirmPassword");
+  };
+
   const handleContinue = () => {
-    if (!fullName || !email || !password || !confirmPassword || !phone) {
-      showAlert("Error", "Please fill in all required fields");
+    const result = validateForm(signupSchema, {
+      fullName,
+      email,
+      phone,
+      password,
+      confirmPassword,
+    });
+
+    if (!result.success) {
+      setErrors(result.errors);
+      // Show the first error as an alert
+      const firstError = result.errors[0];
+      showAlert("Validation Error", firstError.message);
       return;
     }
 
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      showAlert("Error", "Please enter a valid email address");
-      return;
-    }
-
-    // Password validation
-    if (password !== confirmPassword) {
-      showAlert("Error", "Passwords do not match");
-      return;
-    }
+    setErrors(undefined);
 
     const registerData: RegisterData = {
-      fullName: fullName,
-      phone: phone,
-      email,
-      password,
+      fullName: result.data.fullName,
+      phone: result.data.phone,
+      email: result.data.email,
+      password: result.data.password,
     };
 
     registerMutation.mutate(registerData, {
       onSuccess: () => {
-        showAlert("Success", "Account created successfully!");
         router.replace("/(tabs)/home");
       },
       onError: (error: any) => {
@@ -78,16 +111,6 @@ export default function SignupScreen() {
         }
       },
     });
-  };
-
-  const handleGoogleSignup = () => {
-    console.log("Google signup pressed");
-    // Will implement later
-  };
-
-  const handleFacebookSignup = () => {
-    console.log("Facebook signup pressed");
-    // Will implement later
   };
 
   const handleLoginPress = () => {
@@ -119,8 +142,7 @@ export default function SignupScreen() {
                 <Text style={styles.titleAccount}>Account</Text>
               </Text>
               <Text style={styles.subtitle}>
-                Fill your information below or register with your social
-                account.
+                Fill your information below to create your account.
               </Text>
             </View>
 
@@ -134,7 +156,7 @@ export default function SignupScreen() {
                   <TextInput
                     style={styles.input}
                     value={fullName}
-                    onChangeText={setFullName}
+                    onChangeText={handleFullNameChange}
                     placeholder="Full Name"
                     placeholderTextColor="#7F7F7F"
                   />
@@ -147,7 +169,7 @@ export default function SignupScreen() {
                 <TextInput
                   style={styles.inputField}
                   value={email}
-                  onChangeText={setEmail}
+                  onChangeText={handleEmailChange}
                   placeholder="Email Address"
                   placeholderTextColor="#7F7F7F"
                   keyboardType="email-address"
@@ -161,7 +183,7 @@ export default function SignupScreen() {
                 <TextInput
                   style={styles.inputField}
                   value={phone}
-                  onChangeText={setPhone}
+                  onChangeText={handlePhoneChange}
                   placeholder="Phone Number"
                   placeholderTextColor="#7F7F7F"
                   keyboardType="phone-pad"
@@ -175,7 +197,7 @@ export default function SignupScreen() {
                 <TextInput
                   style={styles.inputField}
                   value={password}
-                  onChangeText={setPassword}
+                  onChangeText={handlePasswordChange}
                   placeholder="Password"
                   placeholderTextColor="#7F7F7F"
                   secureTextEntry={!showPassword}
@@ -195,7 +217,7 @@ export default function SignupScreen() {
                 <TextInput
                   style={styles.inputField}
                   value={confirmPassword}
-                  onChangeText={setConfirmPassword}
+                  onChangeText={handleConfirmPasswordChange}
                   placeholder="Confirm Password"
                   placeholderTextColor="#7F7F7F"
                   secureTextEntry={!showConfirmPassword}
@@ -226,43 +248,6 @@ export default function SignupScreen() {
                   <Text style={styles.continueButtonText}>Continue</Text>
                 )}
               </Pressable>
-            </View>
-
-            {/* Social Login Section */}
-            <View style={styles.socialContainer}>
-              <View style={styles.dividerContainer}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>Or signup with</Text>
-                <View style={styles.dividerLine} />
-              </View>
-
-              <View style={styles.socialButtonsContainer}>
-                {/* Google Button */}
-                <Pressable
-                  style={styles.socialButton}
-                  onPress={handleGoogleSignup}
-                >
-                  <Image
-                    source={{
-                      uri: "https://www.figma.com/api/mcp/asset/ff677b0b-2270-40ee-b873-166062a75610",
-                    }}
-                    style={styles.socialIcon}
-                  />
-                </Pressable>
-
-                {/* Facebook Button */}
-                <Pressable
-                  style={styles.socialButton}
-                  onPress={handleFacebookSignup}
-                >
-                  <Image
-                    source={{
-                      uri: "https://www.figma.com/api/mcp/asset/b4e7a989-70a3-41ab-906b-c45a3ab678d0",
-                    }}
-                    style={styles.socialIcon}
-                  />
-                </Pressable>
-              </View>
             </View>
 
             {/* Login Link */}
@@ -393,50 +378,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
     color: "rgba(255, 255, 255, 0.88)",
-  },
-  socialContainer: {
-    paddingHorizontal: 20,
-    marginTop: 24,
-  },
-  dividerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 24,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: "rgba(108, 104, 104, 0.31)",
-  },
-  dividerText: {
-    fontSize: 15,
-    color: "#7F7F7F",
-    marginHorizontal: 12,
-  },
-  socialButtonsContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 30,
-  },
-  socialButton: {
-    width: 57,
-    height: 57,
-    borderRadius: 28.5,
-    backgroundColor: "#FFFFFF",
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  socialIcon: {
-    width: 27,
-    height: 27,
   },
   loginContainer: {
     flexDirection: "row",
