@@ -1,11 +1,9 @@
 import { useBookings } from "@/src/hooks/useBookings";
-import bookingService from "@/src/services/booking.service";
 import { Booking, BookingStatus } from "@/src/types/booking.types";
-import { showAlert, showConfirm } from "@/src/utils/alert";
 import { format } from "date-fns";
 import { Image } from "expo-image";
 import { Stack, useRouter } from "expo-router";
-import { Calendar, X } from "lucide-react-native";
+import { Calendar } from "lucide-react-native";
 import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -53,48 +51,13 @@ export default function MyBookingsScreen() {
   const bookings = data?.data?.data || [];
 
   const handlePressBooking = (booking: Booking) => {
-    const firstRoom = booking.bookingRooms[0];
-    if (firstRoom) {
-      router.push({
-        pathname: "/room-details",
-        params: {
-          id: firstRoom.roomId, // Use the correct room ID from bookingRooms
-          checkInDate: booking.checkInDate,
-          checkOutDate: booking.checkOutDate,
-          hideBottomBar: "true",
-        },
-      });
-    }
-  };
-
-  const handleCancelBooking = async (
-    booking: Booking,
-    event: any
-  ): Promise<void> => {
-    // Prevent navigation when clicking cancel button
-    event.stopPropagation();
-
-    const confirmed = await showConfirm(
-      "Cancel Booking",
-      `Are you sure you want to cancel booking ${booking.bookingCode}? This action cannot be undone.`,
-      "Cancel Booking",
-      "Keep Booking"
-    );
-
-    if (!confirmed) return;
-
-    try {
-      await bookingService.cancelBooking(booking.id);
-      // Refetch bookings to update the list
-      refetch();
-    } catch (error: any) {
-      console.error("Cancel booking error:", error);
-      const errorMessage =
-        error.response?.data?.message ||
-        error.message ||
-        "Failed to cancel booking. Please try again.";
-      showAlert("Error", errorMessage);
-    }
+    // Navigate to booking detail screen
+    router.push({
+      pathname: "/booking-detail",
+      params: {
+        booking: JSON.stringify(booking),
+      },
+    });
   };
 
   const renderBookingItem = ({ item }: { item: Booking }) => {
@@ -175,16 +138,6 @@ export default function MyBookingsScreen() {
               <Text style={styles.price}>
                 {parseInt(item.totalAmount).toLocaleString("vi-VN")} VND
               </Text>
-              {item.status === "PENDING" && (
-                <TouchableOpacity
-                  style={styles.cancelButton}
-                  onPress={(e) => handleCancelBooking(item, e)}
-                  activeOpacity={0.7}
-                >
-                  <X size={16} color="#dc2626" />
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
-              )}
             </View>
           </View>
         </View>
@@ -385,20 +338,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#007ef2",
   },
-  cancelButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#fee2e2",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    gap: 4,
-  },
-  cancelButtonText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#dc2626",
-  },
+
   centerContainer: {
     flex: 1,
     justifyContent: "center",

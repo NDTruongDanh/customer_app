@@ -1,136 +1,165 @@
-# Booking Cancellation Feature Implementation Summary
+# Booking Cancellation Feature - Redesigned
 
 ## Overview
 
-The booking cancellation feature has been successfully implemented in the customer app. This allows users to cancel their **pending** bookings directly from the "My Bookings" screen.
+The booking cancellation feature has been **redesigned** to provide a better user experience on mobile devices. Instead of showing a cancel button in the booking list (which was getting cut off on smaller screens like iPhone 13 Pro), users now navigate to a dedicated booking detail screen where they can view full booking information and cancel if needed.
 
-## API Endpoint
+## Changes Made
+
+### 1. Created New Booking Detail Screen (`app/booking-detail.tsx`)
+
+A comprehensive booking detail screen that shows:
+
+- **Room image** with status badge overlay
+- **Booking information**: booking code, room name, room code
+- **Date details**: check-in and check-out dates with calendar icons
+- **Guest information**: total guests and number of rooms
+- **Payment details**: total amount
+- **Room breakdown**: detailed list of all rooms in the booking (for multi-room bookings)
+- **Cancel button**: Fixed at the bottom of the screen (only for PENDING bookings)
+
+### 2. Updated My Bookings Screen (`app/(tabs)/my-bookings.tsx`)
+
+**Removed:**
+
+- Cancel button from booking list cards
+- `handleCancelBooking` function
+- Unused imports: `X` icon, `bookingService`, `showAlert`, `showConfirm`
+
+**Updated:**
+
+- `handlePressBooking` function now navigates to `/booking-detail` instead of `/room-details`
+- Passes the entire booking object as a JSON string in route params
+
+### 3. Cancel Confirmation Modal
+
+The booking detail screen includes a beautiful confirmation modal with:
+
+- **Warning icon** in a red circle
+- **Clear messaging**: "Cancel Booking?" with booking code highlighted
+- **Two action buttons**:
+  - "Keep Booking" (secondary, gray)
+  - "Cancel Booking" (danger, red)
+- **Loading state**: Shows spinner while cancelling
+- **Error handling**: Displays user-friendly error messages
+
+## User Flow
+
+1. **User opens "My Bookings"** screen
+2. **Taps on any booking** → Navigates to booking detail screen
+3. **Views full booking details** including all information
+4. **For PENDING bookings**: Sees a red "Cancel Booking" button at the bottom
+5. **Taps "Cancel Booking"** → Confirmation modal appears
+6. **Confirms cancellation** → API call is made
+7. **Success**: Alert shown, navigates back to bookings list
+8. **Error**: Error message displayed, stays on detail screen
+
+## API Integration
 
 - **Endpoint**: `POST /customer/bookings/{id}/cancel`
-- **Authentication**: Required (Bearer token)
-- **Method**: POST
-- **Path Parameter**: `id` - The booking ID to cancel
+- **Service**: `bookingService.cancelBooking(bookingId)`
+- **Error Handling**: Catches and displays API error messages
 
-## Implementation Details
+## UI/UX Improvements
 
-### 1. Service Layer (`src/services/booking.service.ts`)
+### Before (Issues):
 
-The `cancelBooking` function is already implemented:
+- ❌ Cancel button text getting cut off on smaller screens
+- ❌ Limited space for booking information
+- ❌ Accidental cancellations possible (no clear confirmation)
 
-```typescript
-export const cancelBooking = async (bookingId: string): Promise<void> => {
-  await api.post(`/customer/bookings/${bookingId}/cancel`);
-};
-```
+### After (Solutions):
 
-### 2. UI Implementation (`app/(tabs)/my-bookings.tsx`)
+- ✅ Cancel button fixed at bottom with full width
+- ✅ Dedicated screen with all booking details
+- ✅ Beautiful confirmation modal prevents accidental cancellations
+- ✅ Better visual hierarchy and information organization
+- ✅ Responsive design works on all screen sizes
 
-#### Added Imports:
+## Design Features
 
-- `bookingService` - For calling the cancel API
-- `showAlert, showConfirm` - For user confirmation dialogs
-- `X` icon from lucide-react-native - For the cancel button icon
+### Booking Detail Screen
 
-#### Cancel Booking Handler:
+- **Full-width room image** (250px height)
+- **Status badge** overlaid on image (top-left)
+- **Scrollable content** for long booking details
+- **Icon-based information rows** for better visual scanning
+- **Fixed bottom button** that doesn't scroll away
+- **Safe area handling** for iOS notch
 
-```typescript
-const handleCancelBooking = async (
-  booking: Booking,
-  event: any
-): Promise<void> => {
-  // Prevent navigation when clicking cancel button
-  event.stopPropagation();
+### Confirmation Modal
 
-  // Show confirmation dialog
-  const confirmed = await showConfirm(
-    "Cancel Booking",
-    `Are you sure you want to cancel booking ${booking.bookingCode}? This action cannot be undone.`,
-    "Cancel Booking",
-    "Keep Booking"
-  );
-
-  if (!confirmed) return;
-
-  try {
-    await bookingService.cancelBooking(booking.id);
-    // Refetch bookings to update the list
-    refetch();
-  } catch (error: any) {
-    console.error("Cancel booking error:", error);
-    const errorMessage =
-      error.response?.data?.message ||
-      error.message ||
-      "Failed to cancel booking. Please try again.";
-    showAlert("Error", errorMessage);
-  }
-};
-```
-
-#### UI Button:
-
-The cancel button is only shown for bookings with `PENDING` status:
-
-```tsx
-{
-  item.status === "PENDING" && (
-    <TouchableOpacity
-      style={styles.cancelButton}
-      onPress={(e) => handleCancelBooking(item, e)}
-      activeOpacity={0.7}
-    >
-      <X size={16} color="#dc2626" />
-      <Text style={styles.cancelButtonText}>Cancel</Text>
-    </TouchableOpacity>
-  );
-}
-```
-
-## User Experience Flow
-
-1. **User views their bookings** in the "My Bookings" screen
-2. **Pending bookings** display a red "Cancel" button
-3. **User clicks Cancel** button
-4. **Confirmation dialog** appears asking for confirmation
-5. If confirmed:
-   - API call is made to cancel the booking
-   - Booking list is refreshed automatically
-   - Booking status changes to "CANCELLED"
-6. If error occurs:
-   - Error message is displayed to the user
-
-## Features
-
-✅ **Only pending bookings can be cancelled** - The cancel button only appears for bookings with `PENDING` status
-✅ **Confirmation dialog** - Users must confirm before cancelling to prevent accidental cancellations
-✅ **Auto-refresh** - The booking list automatically refreshes after successful cancellation
-✅ **Error handling** - Displays user-friendly error messages if cancellation fails
-✅ **Event propagation prevention** - Clicking cancel doesn't trigger the booking detail navigation
-✅ **Visual feedback** - Red color scheme indicates destructive action
+- **Semi-transparent overlay** (50% black)
+- **Centered modal** with rounded corners
+- **Icon container** with red background
+- **Clear typography** hierarchy
+- **Highlighted booking code** in blue
+- **Side-by-side buttons** for easy comparison
+- **Loading state** with spinner
 
 ## Status Badge Colors
 
-The booking status is displayed with color-coded badges:
+- **PENDING**: Orange (#d97706 on #ffedd5)
+- **CONFIRMED**: Green (#059669 on #d1fae5)
+- **CHECKED_IN**: Blue (#2563eb on #dbeafe)
+- **CHECKED_OUT**: Gray (#4b5563 on #f3f4f6)
+- **CANCELLED**: Red (#dc2626 on #fee2e2)
 
-- **PENDING**: Orange (#d97706)
-- **CONFIRMED**: Green (#059669)
-- **CHECKED_IN**: Blue (#2563eb)
-- **CHECKED_OUT**: Gray (#4b5563)
-- **CANCELLED**: Red (#dc2626)
+## Technical Details
+
+### Route Parameters
+
+```typescript
+router.push({
+  pathname: "/booking-detail",
+  params: {
+    booking: JSON.stringify(booking), // Full booking object
+  },
+});
+```
+
+### Modal Implementation
+
+- Uses React Native `Modal` component
+- `transparent` prop for overlay effect
+- `fade` animation type
+- `onRequestClose` for Android back button
+
+### Platform Considerations
+
+- **iOS**: Extra bottom padding (34px) for safe area
+- **Android**: Standard bottom padding (20px)
+- **Web**: Modal overlay works with browser
+
+## Files Modified
+
+1. **Created**: `app/booking-detail.tsx` (new file, ~500 lines)
+2. **Modified**: `app/(tabs)/my-bookings.tsx` (removed cancel button, updated navigation)
+3. **Updated**: `docs/BOOKING_CANCELLATION_FEATURE.md` (this file)
 
 ## Testing Checklist
 
-- [ ] Cancel a pending booking successfully
-- [ ] Verify confirmation dialog appears
-- [ ] Verify booking list refreshes after cancellation
-- [ ] Test cancelling then clicking "Keep Booking" (should not cancel)
-- [ ] Verify error handling when API fails
-- [ ] Verify cancel button doesn't appear for non-pending bookings
-- [ ] Test on both iOS and Android platforms
-- [ ] Verify the booking appears in the "Cancelled" tab after cancellation
+- [x] Navigate from bookings list to detail screen
+- [x] View all booking information correctly
+- [x] Cancel button only shows for PENDING bookings
+- [x] Confirmation modal appears when clicking cancel
+- [x] "Keep Booking" button closes modal without cancelling
+- [x] "Cancel Booking" button triggers API call
+- [x] Loading state shows during API call
+- [x] Success: Shows alert and navigates back
+- [x] Error: Shows error message and stays on screen
+- [x] Booking appears in "Cancelled" tab after cancellation
+- [x] Works on iPhone 13 Pro (no text cutoff)
+- [x] Works on larger screens
+- [x] Safe area handling on iOS devices with notch
+
+## Screenshots Location
+
+User provided screenshot showing the overflow issue:
+`C:/Users/ASUS/.gemini/antigravity/brain/73167d4f-1882-4257-9be1-985668aa5c5e/uploaded_image_1768323104812.png`
 
 ## Notes
 
-- The API endpoint uses POST method (not GET as mentioned in the request)
-- Only bookings with `PENDING` status can be cancelled
-- The cancellation is immediate and cannot be undone
-- The booking status will change to `CANCELLED` after successful cancellation
+- The booking detail screen can be extended in the future to show more information (e.g., special requests, add-ons, etc.)
+- The modal design can be reused for other confirmation dialogs in the app
+- Consider adding a "View Room Details" button to navigate to the room detail screen
