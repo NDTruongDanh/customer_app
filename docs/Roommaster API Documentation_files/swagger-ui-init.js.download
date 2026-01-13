@@ -25,7 +25,7 @@ window.onload = function() {
     },
     "servers": [
       {
-        "url": "http://localhost:8080/v1",
+        "url": "https://room-master-dcdsfng4c7h7hwbg.eastasia-01.azurewebsites.net/v1",
         "description": "Development server"
       }
     ],
@@ -141,55 +141,6 @@ window.onload = function() {
       }
     ],
     "paths": {
-      "/health": {
-        "get": {
-          "summary": "Health check endpoint",
-          "description": "Returns the current health status of the API server",
-          "tags": [
-            "Health"
-          ],
-          "responses": {
-            "200": {
-              "description": "API is healthy and running",
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "type": "object",
-                    "properties": {
-                      "status": {
-                        "type": "string",
-                        "example": "ok",
-                        "description": "Health status of the API"
-                      },
-                      "timestamp": {
-                        "type": "string",
-                        "format": "date-time",
-                        "example": "2026-01-10T03:14:05.575Z",
-                        "description": "Current server timestamp"
-                      },
-                      "uptime": {
-                        "type": "number",
-                        "example": 588.595360349,
-                        "description": "Server uptime in seconds"
-                      },
-                      "environment": {
-                        "type": "string",
-                        "example": "development",
-                        "enum": [
-                          "development",
-                          "production",
-                          "test"
-                        ],
-                        "description": "Current environment"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
       "/customer/auth/register": {
         "post": {
           "summary": "Customer registration",
@@ -207,35 +158,39 @@ window.onload = function() {
                   "required": [
                     "fullName",
                     "phone",
+                    "email",
                     "password"
                   ],
                   "properties": {
                     "fullName": {
                       "type": "string",
+                      "maxLength": 100,
                       "description": "Customer full name"
                     },
                     "phone": {
                       "type": "string",
+                      "maxLength": 20,
                       "description": "Customer phone number (unique)"
                     },
                     "email": {
                       "type": "string",
                       "format": "email",
-                      "description": "Customer email (optional)"
-                    },
-                    "idNumber": {
-                      "type": "string",
-                      "description": "ID number (CMND/CCCD)"
-                    },
-                    "address": {
-                      "type": "string",
-                      "description": "Customer address"
+                      "description": "Customer email (REQUIRED)"
                     },
                     "password": {
                       "type": "string",
                       "format": "password",
                       "minLength": 8,
-                      "description": "Customer password"
+                      "description": "Customer password (must contain letter and number)"
+                    },
+                    "idNumber": {
+                      "type": "string",
+                      "maxLength": 20,
+                      "description": "ID number (CMND/CCCD) - optional"
+                    },
+                    "address": {
+                      "type": "string",
+                      "description": "Customer address - optional"
                     }
                   },
                   "example": {
@@ -590,6 +545,97 @@ window.onload = function() {
           }
         }
       },
+      "/customer/auth/verify-email": {
+        "get": {
+          "summary": "Verify customer email",
+          "description": "Verify customer email address using the token from verification email",
+          "tags": [
+            "Customer Auth"
+          ],
+          "security": [],
+          "parameters": [
+            {
+              "in": "query",
+              "name": "token",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "Email verification token"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Email verified successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "data": {
+                        "type": "object",
+                        "properties": {
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Email already verified or invalid token"
+            },
+            "401": {
+              "description": "Invalid or expired verification token"
+            }
+          }
+        }
+      },
+      "/customer/auth/resend-verification": {
+        "post": {
+          "summary": "Resend email verification",
+          "description": "Resend verification email to customer",
+          "tags": [
+            "Customer Auth"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Verification email sent successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "data": {
+                        "type": "object",
+                        "properties": {
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Email already verified or no email address"
+            },
+            "401": {
+              "description": "Unauthorized"
+            }
+          }
+        }
+      },
       "/customer/bookings": {
         "post": {
           "summary": "Create a new booking",
@@ -840,6 +886,176 @@ window.onload = function() {
           }
         }
       },
+      "/customer/rooms/{roomId}/images": {
+        "get": {
+          "summary": "Get all images for a specific room",
+          "description": "Retrieve all images associated with a room, ordered by sortOrder",
+          "tags": [
+            "Customer Images"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "roomId",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "Room ID"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "List of room images",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "roomId": {
+                          "type": "string"
+                        },
+                        "cloudinaryId": {
+                          "type": "string"
+                        },
+                        "url": {
+                          "type": "string"
+                        },
+                        "secureUrl": {
+                          "type": "string"
+                        },
+                        "thumbnailUrl": {
+                          "type": "string"
+                        },
+                        "width": {
+                          "type": "integer"
+                        },
+                        "height": {
+                          "type": "integer"
+                        },
+                        "format": {
+                          "type": "string"
+                        },
+                        "sortOrder": {
+                          "type": "integer"
+                        },
+                        "isDefault": {
+                          "type": "boolean"
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "404": {
+              "description": "Room not found"
+            }
+          }
+        }
+      },
+      "/customer/room-types/{roomTypeId}/images": {
+        "get": {
+          "summary": "Get all images for a specific room type",
+          "description": "Retrieve all images associated with a room type, ordered by sortOrder",
+          "tags": [
+            "Customer Images"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "roomTypeId",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "Room Type ID"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "List of room type images",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "roomTypeId": {
+                          "type": "string"
+                        },
+                        "cloudinaryId": {
+                          "type": "string"
+                        },
+                        "url": {
+                          "type": "string"
+                        },
+                        "secureUrl": {
+                          "type": "string"
+                        },
+                        "thumbnailUrl": {
+                          "type": "string"
+                        },
+                        "width": {
+                          "type": "integer"
+                        },
+                        "height": {
+                          "type": "integer"
+                        },
+                        "format": {
+                          "type": "string"
+                        },
+                        "sortOrder": {
+                          "type": "integer"
+                        },
+                        "isDefault": {
+                          "type": "boolean"
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "404": {
+              "description": "Room type not found"
+            }
+          }
+        }
+      },
       "/customer/profile": {
         "get": {
           "summary": "Get customer profile",
@@ -921,6 +1137,7 @@ window.onload = function() {
                   "properties": {
                     "fullName": {
                       "type": "string",
+                      "maxLength": 100,
                       "description": "Customer full name"
                     },
                     "email": {
@@ -930,6 +1147,7 @@ window.onload = function() {
                     },
                     "idNumber": {
                       "type": "string",
+                      "maxLength": 20,
                       "description": "ID number (CMND/CCCD)"
                     },
                     "address": {
@@ -1079,6 +1297,42 @@ window.onload = function() {
           ]
         }
       },
+      "/customer/ranks": {
+        "get": {
+          "summary": "Get all VIP ranks",
+          "tags": [
+            "Customer - Ranks"
+          ],
+          "responses": {
+            "200": {
+              "description": "List of all VIP ranks with benefits"
+            }
+          }
+        }
+      },
+      "/customer/ranks/{id}": {
+        "get": {
+          "summary": "Get rank details",
+          "tags": [
+            "Customer - Ranks"
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "id",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Rank details"
+            }
+          }
+        }
+      },
       "/customer/rooms": {
         "get": {
           "summary": "Search rooms by current status",
@@ -1138,7 +1392,7 @@ window.onload = function() {
       "/customer/rooms/available": {
         "get": {
           "summary": "Search rooms available for booking dates",
-          "description": "**Primary endpoint for room search before booking.**\nReturns rooms that have no overlapping bookings for the specified date range.\nResults are grouped by room type for easy display.\n",
+          "description": "**Primary endpoint for room search before booking.**\nReturns rooms that have no overlapping bookings for the specified date range.\nResults are grouped by room type for easy display.\n**Includes images:** Each room and room type includes associated images with full metadata.\n",
           "tags": [
             "Customer Rooms"
           ],
@@ -1444,7 +1698,7 @@ window.onload = function() {
       "/customer/rooms/{roomId}": {
         "get": {
           "summary": "Get room details",
-          "description": "Get detailed information about a specific room",
+          "description": "Get detailed information about a specific room including images for both the room and its room type",
           "tags": [
             "Customer Rooms"
           ],
@@ -1479,7 +1733,7 @@ window.onload = function() {
       "/customer/service/service-usage": {
         "post": {
           "summary": "Create a service usage record (DEPRECATED)",
-          "description": "Service usage creation is now employee-only. Customers should contact staff.",
+          "description": "**This endpoint is deprecated and no longer available for customers.**\n\nService usage creation is now employee-only for better inventory control.\nCustomers should contact staff to request services.",
           "deprecated": true,
           "tags": [
             "Customer Services"
@@ -1491,7 +1745,24 @@ window.onload = function() {
           ],
           "responses": {
             "501": {
-              "description": "Service usage is now employee-only"
+              "description": "Not Implemented - Service usage is now employee-only",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "code": {
+                        "type": "number",
+                        "example": 501
+                      },
+                      "message": {
+                        "type": "string",
+                        "example": "Service usage creation is now employee-only. Please contact staff."
+                      }
+                    }
+                  }
+                }
+              }
             }
           }
         }
@@ -1499,7 +1770,7 @@ window.onload = function() {
       "/customer/service/service-usage/{id}": {
         "patch": {
           "summary": "Update own service usage (DEPRECATED)",
-          "description": "Service usage updates are now employee-only. Customers should contact staff.",
+          "description": "**This endpoint is deprecated and no longer available for customers.**\n\nService usage updates are now employee-only.\nCustomers should contact staff to modify service requests.",
           "deprecated": true,
           "tags": [
             "Customer Services"
@@ -1509,9 +1780,36 @@ window.onload = function() {
               "bearerAuth": []
             }
           ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "id",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
           "responses": {
             "501": {
-              "description": "Service usage updates are now employee-only"
+              "description": "Not Implemented - Service usage updates are now employee-only",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "code": {
+                        "type": "number",
+                        "example": 501
+                      },
+                      "message": {
+                        "type": "string",
+                        "example": "Service usage updates are now employee-only. Please contact staff."
+                      }
+                    }
+                  }
+                }
+              }
             }
           }
         }
@@ -2577,7 +2875,7 @@ window.onload = function() {
         },
         "post": {
           "summary": "Create a booking",
-          "description": "Create a booking for walk-in customers or phone reservations",
+          "description": "Create a booking for walk-in customers or phone reservations.\nMust provide either customerId (existing customer) OR customer object (new customer), not both.\n",
           "tags": [
             "Employee Bookings"
           ],
@@ -2592,13 +2890,23 @@ window.onload = function() {
               "application/json": {
                 "schema": {
                   "type": "object",
+                  "required": [
+                    "rooms",
+                    "checkInDate",
+                    "checkOutDate",
+                    "totalGuests"
+                  ],
                   "properties": {
                     "customerId": {
                       "type": "string",
-                      "description": "Existing customer ID"
+                      "description": "Existing customer ID (use this OR customer, not both)"
                     },
                     "customer": {
                       "type": "object",
+                      "required": [
+                        "fullName",
+                        "phone"
+                      ],
                       "properties": {
                         "fullName": {
                           "type": "string"
@@ -2616,7 +2924,7 @@ window.onload = function() {
                           "type": "string"
                         }
                       },
-                      "description": "New customer details (if customerId not provided)"
+                      "description": "New customer details (use this OR customerId, not both)"
                     },
                     "rooms": {
                       "type": "array",
@@ -2642,7 +2950,8 @@ window.onload = function() {
                       "format": "date-time"
                     },
                     "totalGuests": {
-                      "type": "integer"
+                      "type": "integer",
+                      "minimum": 1
                     }
                   }
                 }
@@ -2665,7 +2974,7 @@ window.onload = function() {
       "/employee/bookings/check-in": {
         "post": {
           "summary": "Check in specific booking rooms with customer assignments",
-          "description": "Check in one or more booking rooms and assign customers to each room",
+          "description": "Check in one or more booking rooms and assign customers to each room.\n**Important:** All booking rooms must be in CONFIRMED status (not PENDING).\nRooms must also be in AVAILABLE or RESERVED status.\n",
           "tags": [
             "Employee Bookings"
           ],
@@ -2997,6 +3306,593 @@ window.onload = function() {
           }
         }
       },
+      "/employee/bookings/rooms/{bookingRoomId}/change-room": {
+        "post": {
+          "summary": "Change room for a checked-in booking",
+          "description": "Transfer a customer from their current room to a new available room. Only works for bookings that are currently checked in. The new room must be available for the remaining duration of the stay.",
+          "tags": [
+            "Employee Bookings"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "bookingRoomId",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "The booking room ID (not the room ID)"
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "newRoomId"
+                  ],
+                  "properties": {
+                    "newRoomId": {
+                      "type": "string",
+                      "description": "The ID of the new room to transfer to"
+                    },
+                    "reason": {
+                      "type": "string",
+                      "maxLength": 500,
+                      "description": "Optional reason for the room change"
+                    }
+                  }
+                },
+                "example": {
+                  "newRoomId": "room-456",
+                  "reason": "Customer requested quieter room"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Room changed successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "data": {
+                        "type": "object",
+                        "properties": {
+                          "bookingRoom": {
+                            "type": "object",
+                            "description": "Updated booking room with new room details"
+                          },
+                          "priceAdjustment": {
+                            "type": "object",
+                            "properties": {
+                              "oldPricePerNight": {
+                                "type": "number"
+                              },
+                              "newPricePerNight": {
+                                "type": "number"
+                              },
+                              "remainingNights": {
+                                "type": "integer"
+                              },
+                              "priceDifference": {
+                                "type": "number",
+                                "description": "Positive for upgrade, negative for downgrade"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Invalid request - booking not checked in or same room"
+            },
+            "404": {
+              "description": "Booking room or new room not found"
+            },
+            "409": {
+              "description": "New room is not available for the remaining stay period"
+            }
+          }
+        }
+      },
+      "/employee/customer-rank/statistics": {
+        "get": {
+          "summary": "Get customer rank statistics",
+          "description": "Retrieve statistics about customer distribution across different ranks",
+          "tags": [
+            "Employee Customer Rank"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Statistics retrieved successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "data": {
+                        "type": "object",
+                        "description": "Rank statistics data"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
+          }
+        }
+      },
+      "/employee/customer-rank": {
+        "get": {
+          "summary": "Get all customer ranks",
+          "description": "Retrieve a list of all customer ranks",
+          "tags": [
+            "Employee Customer Rank"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Customer ranks retrieved successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "data": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "example": "1"
+                            },
+                            "name": {
+                              "type": "string",
+                              "example": "gold"
+                            },
+                            "displayName": {
+                              "type": "string",
+                              "example": "Gold Member"
+                            },
+                            "description": {
+                              "type": "string",
+                              "example": "Premium membership tier"
+                            },
+                            "minSpending": {
+                              "type": "number",
+                              "example": 5000000
+                            },
+                            "maxSpending": {
+                              "type": "number",
+                              "example": 10000000
+                            },
+                            "benefits": {
+                              "type": "string",
+                              "example": "10% discount, priority booking"
+                            },
+                            "color": {
+                              "type": "string",
+                              "example": "#FFD700"
+                            },
+                            "createdAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "updatedAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
+          }
+        },
+        "post": {
+          "summary": "Create a new customer rank",
+          "description": "Create a new customer rank tier with spending thresholds and benefits",
+          "tags": [
+            "Employee Customer Rank"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "name",
+                    "displayName",
+                    "minSpending"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "description": "Unique identifier name for the rank",
+                      "example": "platinum"
+                    },
+                    "displayName": {
+                      "type": "string",
+                      "description": "Display name for the rank",
+                      "example": "Platinum Member"
+                    },
+                    "description": {
+                      "type": "string",
+                      "description": "Description of the rank",
+                      "example": "Elite membership tier with exclusive benefits"
+                    },
+                    "minSpending": {
+                      "type": "number",
+                      "minimum": 0,
+                      "description": "Minimum spending amount to achieve this rank",
+                      "example": 10000000
+                    },
+                    "maxSpending": {
+                      "type": "number",
+                      "minimum": 0,
+                      "description": "Maximum spending amount for this rank (optional)",
+                      "example": 20000000
+                    },
+                    "benefits": {
+                      "type": "string",
+                      "description": "Benefits description for this rank",
+                      "example": "20% discount, free upgrades, priority support"
+                    },
+                    "color": {
+                      "type": "string",
+                      "description": "Color code for UI display",
+                      "example": "#E5E4E2"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "Customer rank created successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "data": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "displayName": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "minSpending": {
+                            "type": "number"
+                          },
+                          "maxSpending": {
+                            "type": "number"
+                          },
+                          "benefits": {
+                            "type": "string"
+                          },
+                          "color": {
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "400": {
+              "$ref": "#/components/responses/ValidationError"
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
+          }
+        }
+      },
+      "/employee/customer-rank/{id}": {
+        "get": {
+          "summary": "Get customer rank by ID",
+          "description": "Retrieve detailed information about a specific customer rank",
+          "tags": [
+            "Employee Customer Rank"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "id",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "Customer rank ID",
+              "example": "1"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Customer rank retrieved successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "data": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "displayName": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "minSpending": {
+                            "type": "number"
+                          },
+                          "maxSpending": {
+                            "type": "number"
+                          },
+                          "benefits": {
+                            "type": "string"
+                          },
+                          "color": {
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            },
+            "404": {
+              "$ref": "#/components/responses/NotFound"
+            }
+          }
+        },
+        "put": {
+          "summary": "Update customer rank",
+          "description": "Update an existing customer rank's information",
+          "tags": [
+            "Employee Customer Rank"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "id",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "Customer rank ID",
+              "example": "1"
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "description": "Unique identifier name for the rank",
+                      "example": "gold"
+                    },
+                    "displayName": {
+                      "type": "string",
+                      "description": "Display name for the rank",
+                      "example": "Gold Member"
+                    },
+                    "description": {
+                      "type": "string",
+                      "description": "Description of the rank",
+                      "example": "Premium membership tier"
+                    },
+                    "minSpending": {
+                      "type": "number",
+                      "minimum": 0,
+                      "description": "Minimum spending amount to achieve this rank",
+                      "example": 5000000
+                    },
+                    "maxSpending": {
+                      "type": "number",
+                      "minimum": 0,
+                      "description": "Maximum spending amount for this rank",
+                      "example": 10000000
+                    },
+                    "benefits": {
+                      "type": "string",
+                      "description": "Benefits description for this rank",
+                      "example": "15% discount, priority booking"
+                    },
+                    "color": {
+                      "type": "string",
+                      "description": "Color code for UI display",
+                      "example": "#FFD700"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Customer rank updated successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "data": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "displayName": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "minSpending": {
+                            "type": "number"
+                          },
+                          "maxSpending": {
+                            "type": "number"
+                          },
+                          "benefits": {
+                            "type": "string"
+                          },
+                          "color": {
+                            "type": "string"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "400": {
+              "$ref": "#/components/responses/ValidationError"
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            },
+            "404": {
+              "$ref": "#/components/responses/NotFound"
+            }
+          }
+        },
+        "delete": {
+          "summary": "Delete customer rank",
+          "description": "Delete an existing customer rank",
+          "tags": [
+            "Employee Customer Rank"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "id",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "Customer rank ID",
+              "example": "1"
+            }
+          ],
+          "responses": {
+            "204": {
+              "description": "Customer rank deleted successfully"
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            },
+            "404": {
+              "$ref": "#/components/responses/NotFound"
+            }
+          }
+        }
+      },
       "/employee/customers": {
         "post": {
           "summary": "Create a new customer",
@@ -3053,6 +3949,10 @@ window.onload = function() {
                     }
                   },
                   "example": {
+                    "isEmailVerified": {
+                      "type": "boolean",
+                      "description": "Whether email is verified (employee can set directly)"
+                    },
                     "fullName": "Nguyễn Văn A",
                     "phone": "0901234567",
                     "password": "password123",
@@ -3506,7 +4406,7 @@ window.onload = function() {
       "/employee/employees": {
         "post": {
           "summary": "Create a new employee",
-          "description": "Create a new employee account (admin only)",
+          "description": "Create a new employee account with assigned role (admin only)",
           "tags": [
             "Employee Management"
           ],
@@ -3524,7 +4424,8 @@ window.onload = function() {
                   "required": [
                     "name",
                     "username",
-                    "password"
+                    "password",
+                    "roleId"
                   ],
                   "properties": {
                     "name": {
@@ -3543,23 +4444,16 @@ window.onload = function() {
                       "minLength": 8,
                       "description": "Employee password (min 8 characters, must contain letter and number)"
                     },
-                    "role": {
+                    "roleId": {
                       "type": "string",
-                      "enum": [
-                        "ADMIN",
-                        "RECEPTIONIST",
-                        "HOUSEKEEPING",
-                        "STAFF"
-                      ],
-                      "default": "STAFF",
-                      "description": "Employee role"
+                      "description": "Role ID (required - use /employee/roles to get available roles)"
                     }
                   },
                   "example": {
                     "name": "Trần Văn B",
                     "username": "tranvanb",
                     "password": "password123",
-                    "role": "RECEPTIONIST"
+                    "roleId": "clq1234567890abcdef"
                   }
                 }
               }
@@ -3588,9 +4482,23 @@ window.onload = function() {
                             "type": "string",
                             "example": "tranvanb"
                           },
-                          "role": {
+                          "roleId": {
                             "type": "string",
-                            "example": "RECEPTIONIST"
+                            "example": "clq1234567890abcdef"
+                          },
+                          "roleRef": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "description": {
+                                "type": "string"
+                              }
+                            }
                           },
                           "updatedAt": {
                             "type": "string",
@@ -3604,7 +4512,7 @@ window.onload = function() {
               }
             },
             "400": {
-              "description": "Username already exists or validation error"
+              "description": "Username already exists, role not found, or validation error"
             },
             "401": {
               "$ref": "#/components/responses/Unauthorized"
@@ -3633,17 +4541,11 @@ window.onload = function() {
             },
             {
               "in": "query",
-              "name": "role",
+              "name": "roleId",
               "schema": {
-                "type": "string",
-                "enum": [
-                  "ADMIN",
-                  "RECEPTIONIST",
-                  "HOUSEKEEPING",
-                  "STAFF"
-                ]
+                "type": "string"
               },
-              "description": "Filter by role"
+              "description": "Filter by role ID"
             },
             {
               "in": "query",
@@ -3674,7 +4576,7 @@ window.onload = function() {
                 "enum": [
                   "name",
                   "username",
-                  "role",
+                  "roleId",
                   "createdAt",
                   "updatedAt"
                 ],
@@ -3860,20 +4762,14 @@ window.onload = function() {
                       "maxLength": 100,
                       "description": "Employee name"
                     },
-                    "role": {
+                    "roleId": {
                       "type": "string",
-                      "enum": [
-                        "ADMIN",
-                        "RECEPTIONIST",
-                        "HOUSEKEEPING",
-                        "STAFF"
-                      ],
-                      "description": "Employee role"
+                      "description": "Role ID"
                     }
                   },
                   "example": {
                     "name": "Trần Văn C",
-                    "role": "ADMIN"
+                    "roleId": "clq1234567890abcdef"
                   }
                 }
               }
@@ -3962,6 +4858,517 @@ window.onload = function() {
           }
         }
       },
+      "/employee/permissions": {
+        "get": {
+          "summary": "Get all permissions",
+          "description": "Retrieve a list of permissions with filters",
+          "tags": [
+            "Permissions"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "query",
+              "name": "search",
+              "schema": {
+                "type": "string"
+              },
+              "description": "Search by name or description"
+            },
+            {
+              "in": "query",
+              "name": "type",
+              "schema": {
+                "type": "string",
+                "enum": [
+                  "SCREEN",
+                  "ACTION"
+                ]
+              },
+              "description": "Filter by permission type"
+            },
+            {
+              "in": "query",
+              "name": "subject",
+              "schema": {
+                "type": "string"
+              },
+              "description": "Filter by subject (e.g., Booking, Room)"
+            },
+            {
+              "in": "query",
+              "name": "page",
+              "schema": {
+                "type": "integer",
+                "minimum": 1,
+                "default": 1
+              }
+            },
+            {
+              "in": "query",
+              "name": "limit",
+              "schema": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 500,
+                "default": 100
+              }
+            },
+            {
+              "in": "query",
+              "name": "sortBy",
+              "schema": {
+                "type": "string",
+                "enum": [
+                  "name",
+                  "type",
+                  "subject",
+                  "action",
+                  "createdAt",
+                  "updatedAt"
+                ],
+                "default": "name"
+              }
+            },
+            {
+              "in": "query",
+              "name": "sortOrder",
+              "schema": {
+                "type": "string",
+                "enum": [
+                  "asc",
+                  "desc"
+                ],
+                "default": "asc"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Permissions retrieved successfully"
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
+          }
+        }
+      },
+      "/employee/permissions/grouped": {
+        "get": {
+          "summary": "Get permissions grouped by subject",
+          "description": "Retrieve all permissions organized by subject with screens and actions",
+          "tags": [
+            "Permissions"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Grouped permissions retrieved successfully"
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
+          }
+        }
+      },
+      "/employee/permissions/screens": {
+        "get": {
+          "summary": "Get all screen permissions",
+          "description": "Retrieve all screen-type permissions",
+          "tags": [
+            "Permissions"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Screen permissions retrieved successfully"
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
+          }
+        }
+      },
+      "/employee/permissions/actions": {
+        "get": {
+          "summary": "Get all action permissions",
+          "description": "Retrieve all action-type permissions",
+          "tags": [
+            "Permissions"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Action permissions retrieved successfully"
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
+          }
+        }
+      },
+      "/employee/permissions/{permissionId}": {
+        "get": {
+          "summary": "Get permission by ID",
+          "description": "Retrieve a specific permission with its details",
+          "tags": [
+            "Permissions"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "permissionId",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "Permission ID"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Permission retrieved successfully"
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            },
+            "404": {
+              "description": "Permission not found"
+            }
+          }
+        }
+      },
+      "/employee/pricing-rules": {
+        "post": {
+          "summary": "Create a new pricing rule",
+          "description": "Create a new pricing rule for room types with custom pricing conditions",
+          "tags": [
+            "Employee - Pricing Rules"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "name",
+                    "adjustmentType",
+                    "adjustmentValue",
+                    "adjustmentValue"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "roomTypeId": {
+                      "type": "string"
+                    },
+                    "adjustmentType": {
+                      "type": "string",
+                      "enum": [
+                        "PERCENTAGE",
+                        "FIXED_AMOUNT"
+                      ]
+                    },
+                    "adjustmentValue": {
+                      "type": "number"
+                    },
+                    "roomTypeIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "calendarEventId": {
+                      "type": "string"
+                    },
+                    "startDate": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "endDate": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "recurrenceRule": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "Pricing rule created successfully"
+            },
+            "400": {
+              "description": "Validation error"
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
+          }
+        },
+        "get": {
+          "summary": "Get all pricing rules",
+          "description": "Retrieve a list of all pricing rules with pagination",
+          "tags": [
+            "Employee - Pricing Rules"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "query",
+              "name": "includeInactive",
+              "schema": {
+                "type": "boolean",
+                "default": 1
+              },
+              "description": "Include inactive rules"
+            },
+            {
+              "in": "query",
+              "name": "limit",
+              "schema": {
+                "type": "integer",
+                "default": 10
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "List of pricing rules"
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
+          }
+        }
+      },
+      "/employee/pricing-rules/{id}": {
+        "get": {
+          "summary": "Get a pricing rule by ID",
+          "description": "Retrieve detailed information about a specific pricing rule",
+          "tags": [
+            "Employee - Pricing Rules"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "id",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Pricing rule details"
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            },
+            "404": {
+              "$ref": "#/components/responses/NotFound",
+              "description": "Pricing rule not found"
+            }
+          }
+        },
+        "put": {
+          "summary": "Update a pricing rule",
+          "description": "Update an existing pricing rule",
+          "tags": [
+            "Employee - Pricing Rules"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "id",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "adjustmentType": {
+                      "type": "string",
+                      "enum": [
+                        "PERCENTAGE",
+                        "FIXED"
+                      ]
+                    },
+                    "adjustmentValue": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Pricing rule updated successfully"
+            },
+            "400": {
+              "description": "Validation error"
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            },
+            "404": {
+              "$ref": "#/components/responses/NotFound"
+            }
+          }
+        },
+        "delete": {
+          "summary": "Delete a pricing rule (soft delete)",
+          "description": "Soft delete a pricing rule (mark as inactive)",
+          "tags": [
+            "Employee - Pricing Rules"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "id",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Pricing rule deleted successfully"
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            },
+            "404": {
+              "$ref": "#/components/responses/NotFound"
+            }
+          }
+        }
+      },
+      "/employee/pricing-rules/{id}/reorder": {
+        "post": {
+          "summary": "Reorder a pricing rule",
+          "description": "Change the priority order of a pricing rule (for drag and drop UI)",
+          "tags": [
+            "Employee - Pricing Rules"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "id",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "newPosition"
+                  ],
+                  "properties": {
+                    "newPosition": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "prevRank": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "nextRank": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Pricing rule reordered successfully"
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            },
+            "404": {
+              "$ref": "#/components/responses/NotFound"
+            }
+          }
+        }
+      },
       "/employee/profile": {
         "get": {
           "summary": "Get employee profile",
@@ -4039,6 +5446,7 @@ window.onload = function() {
                   "properties": {
                     "name": {
                       "type": "string",
+                      "maxLength": 100,
                       "description": "Employee name"
                     }
                   },
@@ -4179,6 +5587,1324 @@ window.onload = function() {
               "bearerAuth": []
             }
           ]
+        }
+      },
+      "/employee/reports/rooms/availability": {
+        "get": {
+          "summary": "Check room availability at specific time",
+          "description": "Get current room status breakdown (available, occupied, reserved) for a date range",
+          "tags": [
+            "Employee Reports"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "query",
+              "name": "checkInDate",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "date"
+              },
+              "description": "Check-in date for availability check (ISO format)"
+            },
+            {
+              "in": "query",
+              "name": "checkOutDate",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "date"
+              },
+              "description": "Check-out date for availability check (ISO format)"
+            },
+            {
+              "in": "query",
+              "name": "roomTypeId",
+              "schema": {
+                "type": "string"
+              },
+              "description": "Filter by specific room type"
+            },
+            {
+              "in": "query",
+              "name": "capacity",
+              "schema": {
+                "type": "integer"
+              },
+              "description": "Minimum room capacity required"
+            },
+            {
+              "in": "query",
+              "name": "floor",
+              "schema": {
+                "type": "integer"
+              },
+              "description": "Filter by floor number"
+            },
+            {
+              "in": "query",
+              "name": "minPrice",
+              "schema": {
+                "type": "number"
+              },
+              "description": "Minimum price per night"
+            },
+            {
+              "in": "query",
+              "name": "maxPrice",
+              "schema": {
+                "type": "number"
+              },
+              "description": "Maximum price per night"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Room availability breakdown"
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "403": {
+              "description": "Forbidden - Requires Reports access"
+            }
+          }
+        }
+      },
+      "/employee/reports/rooms/occupancy-forecast": {
+        "get": {
+          "summary": "Get room occupancy forecast",
+          "description": "Calculate occupancy rate forecast by day, week, or month with detailed breakdown",
+          "tags": [
+            "Employee Reports"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "query",
+              "name": "startDate",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "date"
+              },
+              "description": "Start date for forecast period"
+            },
+            {
+              "in": "query",
+              "name": "endDate",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "date"
+              },
+              "description": "End date for forecast period"
+            },
+            {
+              "in": "query",
+              "name": "groupBy",
+              "schema": {
+                "type": "string",
+                "enum": [
+                  "day",
+                  "week",
+                  "month"
+                ],
+                "default": "day"
+              },
+              "description": "Grouping interval for forecast"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Occupancy forecast with rates and counts"
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "403": {
+              "description": "Forbidden - Requires Reports access"
+            }
+          }
+        }
+      },
+      "/employee/reports/customers/stay-history": {
+        "get": {
+          "summary": "Get customer stay history",
+          "description": "List all customers with their booking history, total nights, and spending",
+          "tags": [
+            "Employee Reports"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "query",
+              "name": "fromDate",
+              "schema": {
+                "type": "string",
+                "format": "date"
+              },
+              "description": "Filter bookings from this date"
+            },
+            {
+              "in": "query",
+              "name": "toDate",
+              "schema": {
+                "type": "string",
+                "format": "date"
+              },
+              "description": "Filter bookings until this date"
+            },
+            {
+              "in": "query",
+              "name": "rankId",
+              "schema": {
+                "type": "string"
+              },
+              "description": "Filter by customer rank"
+            },
+            {
+              "in": "query",
+              "name": "minStays",
+              "schema": {
+                "type": "integer"
+              },
+              "description": "Minimum number of stays"
+            },
+            {
+              "in": "query",
+              "name": "minTotalSpent",
+              "schema": {
+                "type": "number"
+              },
+              "description": "Minimum total amount spent"
+            },
+            {
+              "in": "query",
+              "name": "page",
+              "schema": {
+                "type": "integer",
+                "default": 1
+              },
+              "description": "Page number"
+            },
+            {
+              "in": "query",
+              "name": "limit",
+              "schema": {
+                "type": "integer",
+                "default": 20
+              },
+              "description": "Records per page"
+            },
+            {
+              "in": "query",
+              "name": "sortBy",
+              "schema": {
+                "type": "string",
+                "enum": [
+                  "totalSpent",
+                  "totalStays",
+                  "lastVisit"
+                ],
+                "default": "totalSpent"
+              },
+              "description": "Sort field"
+            },
+            {
+              "in": "query",
+              "name": "sortOrder",
+              "schema": {
+                "type": "string",
+                "enum": [
+                  "asc",
+                  "desc"
+                ],
+                "default": "desc"
+              },
+              "description": "Sort direction"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Paginated customer stay history"
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "403": {
+              "description": "Forbidden - Requires Reports access"
+            }
+          }
+        }
+      },
+      "/employee/reports/customers/first-time-guests": {
+        "get": {
+          "summary": "Get first-time guests",
+          "description": "List customers who made their first booking in the specified period",
+          "tags": [
+            "Employee Reports"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "query",
+              "name": "fromDate",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "date"
+              },
+              "description": "Period start date"
+            },
+            {
+              "in": "query",
+              "name": "toDate",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "date"
+              },
+              "description": "Period end date"
+            },
+            {
+              "in": "query",
+              "name": "page",
+              "schema": {
+                "type": "integer",
+                "default": 1
+              },
+              "description": "Page number"
+            },
+            {
+              "in": "query",
+              "name": "limit",
+              "schema": {
+                "type": "integer",
+                "default": 20
+              },
+              "description": "Records per page"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "List of first-time guests with booking details"
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "403": {
+              "description": "Forbidden - Requires Reports access"
+            }
+          }
+        }
+      },
+      "/employee/reports/customers/lifetime-value": {
+        "get": {
+          "summary": "Get customer lifetime value (CLV)",
+          "description": "Calculate CLV for customers with scoring based on spending, frequency, and recency",
+          "tags": [
+            "Employee Reports"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "query",
+              "name": "limit",
+              "schema": {
+                "type": "integer",
+                "default": 50
+              },
+              "description": "Number of top customers to return"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Customer lifetime value analytics with CLV scores"
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "403": {
+              "description": "Forbidden - Requires Reports access"
+            }
+          }
+        }
+      },
+      "/employee/reports/customers/rank-distribution": {
+        "get": {
+          "summary": "Get customer rank distribution",
+          "description": "Show customer count and revenue breakdown by loyalty rank",
+          "tags": [
+            "Employee Reports"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Customer rank distribution with counts and revenue"
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "403": {
+              "description": "Forbidden - Requires Reports access"
+            }
+          }
+        }
+      },
+      "/employee/reports/employees/booking-performance": {
+        "get": {
+          "summary": "Get employee booking performance",
+          "description": "Track employee performance in check-ins, checkouts, and booking revenue",
+          "tags": [
+            "Employee Reports"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "query",
+              "name": "fromDate",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "date"
+              },
+              "description": "Period start date"
+            },
+            {
+              "in": "query",
+              "name": "toDate",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "date"
+              },
+              "description": "Period end date"
+            },
+            {
+              "in": "query",
+              "name": "employeeId",
+              "schema": {
+                "type": "string"
+              },
+              "description": "Filter by specific employee"
+            },
+            {
+              "in": "query",
+              "name": "sortBy",
+              "schema": {
+                "type": "string",
+                "enum": [
+                  "totalBookings",
+                  "totalRevenue",
+                  "totalTransactions"
+                ],
+                "default": "totalRevenue"
+              },
+              "description": "Sort field"
+            },
+            {
+              "in": "query",
+              "name": "sortOrder",
+              "schema": {
+                "type": "string",
+                "enum": [
+                  "asc",
+                  "desc"
+                ],
+                "default": "desc"
+              },
+              "description": "Sort direction"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Employee booking performance metrics"
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "403": {
+              "description": "Forbidden - Requires Reports access"
+            }
+          }
+        }
+      },
+      "/employee/reports/employees/service-performance": {
+        "get": {
+          "summary": "Get employee service performance",
+          "description": "Track employee performance in service delivery and service revenue",
+          "tags": [
+            "Employee Reports"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "query",
+              "name": "fromDate",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "date"
+              },
+              "description": "Period start date"
+            },
+            {
+              "in": "query",
+              "name": "toDate",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "date"
+              },
+              "description": "Period end date"
+            },
+            {
+              "in": "query",
+              "name": "employeeId",
+              "schema": {
+                "type": "string"
+              },
+              "description": "Filter by specific employee"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Employee service performance metrics"
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "403": {
+              "description": "Forbidden - Requires Reports access"
+            }
+          }
+        }
+      },
+      "/employee/reports/employees/activity-summary": {
+        "get": {
+          "summary": "Get employee activity summary",
+          "description": "Aggregate employee activities by type (check-in, checkout, service, etc.)",
+          "tags": [
+            "Employee Reports"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "query",
+              "name": "fromDate",
+              "schema": {
+                "type": "string",
+                "format": "date"
+              },
+              "description": "Period start date"
+            },
+            {
+              "in": "query",
+              "name": "toDate",
+              "schema": {
+                "type": "string",
+                "format": "date"
+              },
+              "description": "Period end date"
+            },
+            {
+              "in": "query",
+              "name": "employeeId",
+              "schema": {
+                "type": "string"
+              },
+              "description": "Filter by specific employee"
+            },
+            {
+              "in": "query",
+              "name": "activityTypes",
+              "schema": {
+                "type": "string"
+              },
+              "description": "Comma-separated activity types (CHECK_IN, CHECK_OUT, SERVICE, etc.)"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Employee activity summary by type"
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "403": {
+              "description": "Forbidden - Requires Reports access"
+            }
+          }
+        }
+      },
+      "/employee/reports/services/usage-statistics": {
+        "get": {
+          "summary": "Get service usage statistics",
+          "description": "Show service usage count and status breakdown (completed, pending, cancelled)",
+          "tags": [
+            "Employee Reports"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "query",
+              "name": "fromDate",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "date"
+              },
+              "description": "Period start date"
+            },
+            {
+              "in": "query",
+              "name": "toDate",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "date"
+              },
+              "description": "Period end date"
+            },
+            {
+              "in": "query",
+              "name": "serviceId",
+              "schema": {
+                "type": "string"
+              },
+              "description": "Filter by specific service"
+            },
+            {
+              "in": "query",
+              "name": "status",
+              "schema": {
+                "type": "string",
+                "enum": [
+                  "PENDING",
+                  "TRANSFERRED",
+                  "COMPLETED",
+                  "CANCELLED"
+                ]
+              },
+              "description": "Filter by service usage status"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Service usage statistics with status breakdown"
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "403": {
+              "description": "Forbidden - Requires Reports access"
+            }
+          }
+        }
+      },
+      "/employee/reports/services/top-by-revenue": {
+        "get": {
+          "summary": "Get top services by revenue",
+          "description": "List highest revenue-generating services with usage count and total revenue",
+          "tags": [
+            "Employee Reports"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "query",
+              "name": "fromDate",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "date"
+              },
+              "description": "Period start date"
+            },
+            {
+              "in": "query",
+              "name": "toDate",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "date"
+              },
+              "description": "Period end date"
+            },
+            {
+              "in": "query",
+              "name": "limit",
+              "schema": {
+                "type": "integer",
+                "default": 10
+              },
+              "description": "Number of top services to return"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Top services ranked by revenue"
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "403": {
+              "description": "Forbidden - Requires Reports access"
+            }
+          }
+        }
+      },
+      "/employee/reports/services/trend": {
+        "get": {
+          "summary": "Get service performance trend",
+          "description": "Analyze service usage trends over time with growth rate calculations",
+          "tags": [
+            "Employee Reports"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "query",
+              "name": "fromDate",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "date"
+              },
+              "description": "Trend period start date"
+            },
+            {
+              "in": "query",
+              "name": "toDate",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "date"
+              },
+              "description": "Trend period end date"
+            },
+            {
+              "in": "query",
+              "name": "groupBy",
+              "schema": {
+                "type": "string",
+                "enum": [
+                  "day",
+                  "week",
+                  "month"
+                ],
+                "default": "day"
+              },
+              "description": "Grouping interval for trend analysis"
+            },
+            {
+              "in": "query",
+              "name": "serviceId",
+              "schema": {
+                "type": "string"
+              },
+              "description": "Filter by specific service"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Service trend data with growth rates"
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "403": {
+              "description": "Forbidden - Requires Reports access"
+            }
+          }
+        }
+      },
+      "/employee/reports/revenue/summary": {
+        "get": {
+          "summary": "Get revenue summary",
+          "description": "Calculate key hotel KPIs including ADR (Average Daily Rate), RevPAR (Revenue Per Available Room), and occupancy rate",
+          "tags": [
+            "Employee Reports"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "query",
+              "name": "fromDate",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "date"
+              },
+              "description": "Period start date"
+            },
+            {
+              "in": "query",
+              "name": "toDate",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "date"
+              },
+              "description": "Period end date"
+            },
+            {
+              "in": "query",
+              "name": "groupBy",
+              "schema": {
+                "type": "string",
+                "enum": [
+                  "day",
+                  "week",
+                  "month",
+                  "quarter",
+                  "year"
+                ],
+                "default": "day"
+              },
+              "description": "Grouping interval for summary"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Revenue summary with ADR, RevPAR, occupancy metrics"
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "403": {
+              "description": "Forbidden - Requires Reports access"
+            }
+          }
+        }
+      },
+      "/employee/reports/revenue/by-room-type": {
+        "get": {
+          "summary": "Get revenue by room type",
+          "description": "Break down revenue and occupancy metrics by room type",
+          "tags": [
+            "Employee Reports"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "query",
+              "name": "fromDate",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "date"
+              },
+              "description": "Period start date"
+            },
+            {
+              "in": "query",
+              "name": "toDate",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "date"
+              },
+              "description": "Period end date"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Revenue breakdown by room type with occupancy stats"
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "403": {
+              "description": "Forbidden - Requires Reports access"
+            }
+          }
+        }
+      },
+      "/employee/reports/revenue/payment-methods": {
+        "get": {
+          "summary": "Get payment method distribution",
+          "description": "Show transaction count and total amount by payment method (cash, card, transfer, etc.)",
+          "tags": [
+            "Employee Reports"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "query",
+              "name": "fromDate",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "date"
+              },
+              "description": "Period start date"
+            },
+            {
+              "in": "query",
+              "name": "toDate",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "date"
+              },
+              "description": "Period end date"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Payment method distribution with percentages"
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "403": {
+              "description": "Forbidden - Requires Reports access"
+            }
+          }
+        }
+      },
+      "/employee/reports/revenue/promotions": {
+        "get": {
+          "summary": "Get promotion effectiveness",
+          "description": "Analyze promotion ROI, usage count, and revenue impact",
+          "tags": [
+            "Employee Reports"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "query",
+              "name": "fromDate",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "date"
+              },
+              "description": "Period start date"
+            },
+            {
+              "in": "query",
+              "name": "toDate",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "date"
+              },
+              "description": "Period end date"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Promotion effectiveness metrics with ROI calculations"
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "403": {
+              "description": "Forbidden - Requires Reports access"
+            }
+          }
+        }
+      },
+      "/employee/roles": {
+        "post": {
+          "summary": "Create a new role",
+          "description": "Create a new role with permissions (admin only)",
+          "tags": [
+            "Roles"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "name"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "maxLength": 50,
+                      "description": "Role name"
+                    },
+                    "description": {
+                      "type": "string",
+                      "maxLength": 255,
+                      "description": "Role description"
+                    },
+                    "permissionIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Array of permission IDs to assign to role"
+                    }
+                  },
+                  "example": {
+                    "name": "MANAGER",
+                    "description": "Manager with booking and room access",
+                    "permissionIds": [
+                      "perm_id_1",
+                      "perm_id_2"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "Role created successfully"
+            },
+            "400": {
+              "description": "Role name already exists or validation error"
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
+          }
+        },
+        "get": {
+          "summary": "Get all roles",
+          "description": "Retrieve a paginated list of roles with permissions",
+          "tags": [
+            "Roles"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "query",
+              "name": "search",
+              "schema": {
+                "type": "string"
+              },
+              "description": "Search by name or description"
+            },
+            {
+              "in": "query",
+              "name": "isActive",
+              "schema": {
+                "type": "boolean"
+              },
+              "description": "Filter by active status"
+            },
+            {
+              "in": "query",
+              "name": "page",
+              "schema": {
+                "type": "integer",
+                "minimum": 1,
+                "default": 1
+              }
+            },
+            {
+              "in": "query",
+              "name": "limit",
+              "schema": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100,
+                "default": 10
+              }
+            },
+            {
+              "in": "query",
+              "name": "sortBy",
+              "schema": {
+                "type": "string",
+                "enum": [
+                  "name",
+                  "description",
+                  "isActive",
+                  "createdAt",
+                  "updatedAt"
+                ],
+                "default": "createdAt"
+              }
+            },
+            {
+              "in": "query",
+              "name": "sortOrder",
+              "schema": {
+                "type": "string",
+                "enum": [
+                  "asc",
+                  "desc"
+                ],
+                "default": "desc"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Roles retrieved successfully"
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
+          }
+        }
+      },
+      "/employee/roles/{roleId}": {
+        "get": {
+          "summary": "Get role by ID",
+          "description": "Retrieve a specific role with its permissions",
+          "tags": [
+            "Roles"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "roleId",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "Role ID"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Role retrieved successfully"
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            },
+            "404": {
+              "description": "Role not found"
+            }
+          }
+        },
+        "patch": {
+          "summary": "Update role",
+          "description": "Update role information and permissions",
+          "tags": [
+            "Roles"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "roleId",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "Role ID"
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "maxLength": 50
+                    },
+                    "description": {
+                      "type": "string",
+                      "maxLength": 255
+                    },
+                    "isActive": {
+                      "type": "boolean"
+                    },
+                    "permissionIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "example": {
+                    "name": "SENIOR_MANAGER",
+                    "description": "Senior manager with full booking access",
+                    "isActive": true,
+                    "permissionIds": [
+                      "perm_id_1",
+                      "perm_id_2",
+                      "perm_id_3"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Role updated successfully"
+            },
+            "400": {
+              "description": "Validation error"
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            },
+            "404": {
+              "description": "Role not found"
+            }
+          }
+        },
+        "delete": {
+          "summary": "Delete role",
+          "description": "Delete a role (only if no employees assigned)",
+          "tags": [
+            "Roles"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "roleId",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "Role ID"
+            }
+          ],
+          "responses": {
+            "204": {
+              "description": "Role deleted successfully"
+            },
+            "400": {
+              "description": "Cannot delete role with employees"
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            },
+            "404": {
+              "description": "Role not found"
+            }
+          }
+        }
+      },
+      "/employee/roles/{roleId}/permissions": {
+        "get": {
+          "summary": "Get role permissions",
+          "description": "Retrieve all permissions assigned to a role",
+          "tags": [
+            "Roles"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "roleId",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "Role ID"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Permissions retrieved successfully"
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            },
+            "404": {
+              "description": "Role not found"
+            }
+          }
         }
       },
       "/employee/rooms": {
@@ -4515,6 +7241,251 @@ window.onload = function() {
           }
         }
       },
+      "/employee/rooms/available": {
+        "get": {
+          "summary": "Search rooms available for date range",
+          "description": "Search for rooms that are available for booking in a specific date range. This is the primary endpoint for employees to find rooms when creating bookings.",
+          "tags": [
+            "Rooms"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "query",
+              "name": "checkInDate",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "date"
+              },
+              "description": "Check-in date (YYYY-MM-DD)"
+            },
+            {
+              "in": "query",
+              "name": "checkOutDate",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "date"
+              },
+              "description": "Check-out date (YYYY-MM-DD)"
+            },
+            {
+              "in": "query",
+              "name": "search",
+              "schema": {
+                "type": "string"
+              },
+              "description": "Search by room number or code"
+            },
+            {
+              "in": "query",
+              "name": "roomTypeId",
+              "schema": {
+                "type": "string"
+              },
+              "description": "Filter by room type ID"
+            },
+            {
+              "in": "query",
+              "name": "floor",
+              "schema": {
+                "type": "integer"
+              },
+              "description": "Filter by floor number"
+            },
+            {
+              "in": "query",
+              "name": "minCapacity",
+              "schema": {
+                "type": "integer"
+              },
+              "description": "Minimum room capacity"
+            },
+            {
+              "in": "query",
+              "name": "maxCapacity",
+              "schema": {
+                "type": "integer"
+              },
+              "description": "Maximum room capacity"
+            },
+            {
+              "in": "query",
+              "name": "minPrice",
+              "schema": {
+                "type": "number"
+              },
+              "description": "Minimum price per night"
+            },
+            {
+              "in": "query",
+              "name": "maxPrice",
+              "schema": {
+                "type": "number"
+              },
+              "description": "Maximum price per night"
+            },
+            {
+              "in": "query",
+              "name": "page",
+              "schema": {
+                "type": "integer",
+                "default": 1
+              }
+            },
+            {
+              "in": "query",
+              "name": "limit",
+              "schema": {
+                "type": "integer",
+                "default": 10
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Available rooms grouped by room type",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "data": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "roomType": {
+                              "type": "object"
+                            },
+                            "availableCount": {
+                              "type": "integer"
+                            },
+                            "rooms": {
+                              "type": "array"
+                            }
+                          }
+                        }
+                      },
+                      "total": {
+                        "type": "integer"
+                      },
+                      "checkInDate": {
+                        "type": "string"
+                      },
+                      "checkOutDate": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Invalid date range"
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
+          }
+        }
+      },
+      "/employee/rooms/check-availability": {
+        "post": {
+          "summary": "Bulk check room availability",
+          "description": "Check if multiple rooms are available for a date range. Use before creating a booking.",
+          "tags": [
+            "Rooms"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "roomIds",
+                    "checkInDate",
+                    "checkOutDate"
+                  ],
+                  "properties": {
+                    "roomIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Array of room IDs to check"
+                    },
+                    "checkInDate": {
+                      "type": "string",
+                      "format": "date",
+                      "description": "Check-in date (YYYY-MM-DD)"
+                    },
+                    "checkOutDate": {
+                      "type": "string",
+                      "format": "date",
+                      "description": "Check-out date (YYYY-MM-DD)"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Availability status for each room",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "allAvailable": {
+                        "type": "boolean"
+                      },
+                      "results": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "roomId": {
+                              "type": "string"
+                            },
+                            "available": {
+                              "type": "boolean"
+                            },
+                            "room": {
+                              "type": "object"
+                            },
+                            "conflictingBookings": {
+                              "type": "array"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Validation error"
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
+          }
+        }
+      },
       "/employee/rooms/{roomId}": {
         "get": {
           "summary": "Get room by ID",
@@ -4774,6 +7745,245 @@ window.onload = function() {
             },
             "404": {
               "$ref": "#/components/responses/NotFound"
+            }
+          }
+        }
+      },
+      "/employee/rooms/{roomId}/images": {
+        "post": {
+          "summary": "Upload single image for room",
+          "tags": [
+            "Rooms"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "roomId",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "multipart/form-data": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "image"
+                  ],
+                  "properties": {
+                    "image": {
+                      "type": "string",
+                      "format": "binary"
+                    },
+                    "isDefault": {
+                      "type": "string",
+                      "enum": [
+                        "true",
+                        "false"
+                      ]
+                    },
+                    "sortOrder": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "Image uploaded successfully"
+            }
+          }
+        }
+      },
+      "/employee/rooms/{roomId}/images/reorder": {
+        "put": {
+          "summary": "Reorder room images",
+          "tags": [
+            "Rooms"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "roomId",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "imageIds"
+                  ],
+                  "properties": {
+                    "imageIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Images reordered successfully"
+            }
+          }
+        }
+      },
+      "/employee/rooms/images/{imageId}": {
+        "delete": {
+          "summary": "Delete room image",
+          "tags": [
+            "Rooms"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "imageId",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "204": {
+              "description": "Image deleted successfully"
+            }
+          }
+        }
+      },
+      "/employee/rooms/images/{imageId}/default": {
+        "put": {
+          "summary": "Set image as default for room",
+          "tags": [
+            "Rooms"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "imageId",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Default image set successfully"
+            }
+          }
+        }
+      },
+      "/employee/rooms/{roomId}/availability": {
+        "get": {
+          "summary": "Check single room availability",
+          "description": "Check if a specific room is available for a date range. Returns conflicting bookings if any.",
+          "tags": [
+            "Rooms"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "roomId",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "Room ID"
+            },
+            {
+              "in": "query",
+              "name": "checkInDate",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "date"
+              },
+              "description": "Check-in date (YYYY-MM-DD)"
+            },
+            {
+              "in": "query",
+              "name": "checkOutDate",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "date"
+              },
+              "description": "Check-out date (YYYY-MM-DD)"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Room availability status",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "available": {
+                        "type": "boolean"
+                      },
+                      "room": {
+                        "type": "object"
+                      },
+                      "conflictingBookings": {
+                        "type": "array"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Validation error"
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            },
+            "404": {
+              "description": "Room not found"
             }
           }
         }
@@ -5504,6 +8714,401 @@ window.onload = function() {
           }
         }
       },
+      "/employee/room-types/{roomTypeId}/images": {
+        "post": {
+          "summary": "Upload single image for room type",
+          "description": "Upload a single image and associate it with a room type",
+          "tags": [
+            "Room Types"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "roomTypeId",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "Room type ID"
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "multipart/form-data": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "image"
+                  ],
+                  "properties": {
+                    "image": {
+                      "type": "string",
+                      "format": "binary",
+                      "description": "Image file (JPEG, PNG, or WebP, max 5MB)"
+                    },
+                    "isDefault": {
+                      "type": "string",
+                      "enum": [
+                        "true",
+                        "false"
+                      ],
+                      "description": "Set as default image"
+                    },
+                    "sortOrder": {
+                      "type": "integer",
+                      "description": "Sort order for the image"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "Image uploaded successfully"
+            },
+            "400": {
+              "description": "No file uploaded or invalid file type"
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
+          }
+        },
+        "get": {
+          "summary": "Get all images for a room type",
+          "description": "Retrieve all images associated with a room type",
+          "tags": [
+            "Room Types"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "roomTypeId",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "Room type ID"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Images retrieved successfully"
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
+          }
+        }
+      },
+      "/employee/room-types/{roomTypeId}/images/batch": {
+        "post": {
+          "summary": "Upload multiple images for room type",
+          "description": "Upload multiple images (up to 10) and associate them with a room type",
+          "tags": [
+            "Room Types"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "roomTypeId",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "Room type ID"
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "multipart/form-data": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "images"
+                  ],
+                  "properties": {
+                    "images": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "binary"
+                      },
+                      "description": "Image files (JPEG, PNG, or WebP, max 5MB each, up to 10 files)"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "All images uploaded successfully"
+            },
+            "207": {
+              "description": "Partial success - some images failed to upload"
+            },
+            "400": {
+              "description": "No files uploaded"
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
+          }
+        }
+      },
+      "/employee/room-types/{roomTypeId}/images/reorder": {
+        "put": {
+          "summary": "Reorder room type images",
+          "description": "Update the sort order of images for a room type",
+          "tags": [
+            "Room Types"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "roomTypeId",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "Room type ID"
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "imageIds"
+                  ],
+                  "properties": {
+                    "imageIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Array of image IDs in desired order"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Images reordered successfully"
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
+          }
+        }
+      },
+      "/employee/room-types/{roomTypeId}/upload-signature": {
+        "get": {
+          "summary": "Get upload signature for direct upload (Mobile)",
+          "description": "Generate signed parameters for direct upload to Cloudinary from mobile app",
+          "tags": [
+            "Room Types"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "roomTypeId",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "Room type ID"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Upload signature generated"
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
+          }
+        }
+      },
+      "/employee/room-types/{roomTypeId}/images/direct": {
+        "post": {
+          "summary": "Save image metadata after direct upload",
+          "description": "Save image metadata to database after direct upload to Cloudinary from mobile app",
+          "tags": [
+            "Room Types"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "roomTypeId",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "Room type ID"
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "cloudinaryId",
+                    "url",
+                    "secureUrl"
+                  ],
+                  "properties": {
+                    "cloudinaryId": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    },
+                    "secureUrl": {
+                      "type": "string"
+                    },
+                    "width": {
+                      "type": "integer"
+                    },
+                    "height": {
+                      "type": "integer"
+                    },
+                    "format": {
+                      "type": "string"
+                    },
+                    "isDefault": {
+                      "type": "boolean"
+                    },
+                    "sortOrder": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "Image metadata saved successfully"
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
+          }
+        }
+      },
+      "/employee/room-types/images/{imageId}": {
+        "delete": {
+          "summary": "Delete room type image",
+          "description": "Delete an image from both Cloudinary and database",
+          "tags": [
+            "Room Types"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "imageId",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "Image ID"
+            }
+          ],
+          "responses": {
+            "204": {
+              "description": "Image deleted successfully"
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            },
+            "404": {
+              "description": "Image not found"
+            }
+          }
+        }
+      },
+      "/employee/room-types/images/{imageId}/default": {
+        "put": {
+          "summary": "Set image as default for room type",
+          "description": "Set a specific image as the default image for its room type",
+          "tags": [
+            "Room Types"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "imageId",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "Image ID"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Default image set successfully"
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            },
+            "404": {
+              "description": "Image not found"
+            }
+          }
+        }
+      },
       "/employee/services": {
         "post": {
           "summary": "Create a new service",
@@ -6015,6 +9620,264 @@ window.onload = function() {
             },
             "404": {
               "$ref": "#/components/responses/NotFound"
+            }
+          }
+        }
+      },
+      "/employee/services/{serviceId}/images": {
+        "post": {
+          "summary": "Upload single image for service",
+          "description": "Upload a single image and associate it with a service",
+          "tags": [
+            "Services"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "serviceId",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "Service ID"
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "multipart/form-data": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "image"
+                  ],
+                  "properties": {
+                    "image": {
+                      "type": "string",
+                      "format": "binary",
+                      "description": "Image file (JPEG, PNG, or WebP, max 5MB)"
+                    },
+                    "isDefault": {
+                      "type": "string",
+                      "enum": [
+                        "true",
+                        "false"
+                      ]
+                    },
+                    "sortOrder": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "Image uploaded successfully"
+            },
+            "400": {
+              "description": "No file uploaded or invalid file type"
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
+          }
+        },
+        "get": {
+          "summary": "Get all images for a service",
+          "description": "Retrieve all images associated with a service",
+          "tags": [
+            "Services"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "serviceId",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "Service ID"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Images retrieved successfully"
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
+          }
+        }
+      },
+      "/employee/services/{serviceId}/images/batch": {
+        "post": {
+          "summary": "Upload multiple images for service",
+          "tags": [
+            "Services"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "serviceId",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "multipart/form-data": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "images"
+                  ],
+                  "properties": {
+                    "images": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "binary"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "All images uploaded successfully"
+            },
+            "207": {
+              "description": "Partial success"
+            }
+          }
+        }
+      },
+      "/employee/services/{serviceId}/images/reorder": {
+        "put": {
+          "summary": "Reorder service images",
+          "tags": [
+            "Services"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "serviceId",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "imageIds"
+                  ],
+                  "properties": {
+                    "imageIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Images reordered successfully"
+            }
+          }
+        }
+      },
+      "/employee/services/images/{imageId}": {
+        "delete": {
+          "summary": "Delete service image",
+          "tags": [
+            "Services"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "imageId",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "204": {
+              "description": "Image deleted successfully"
+            },
+            "404": {
+              "description": "Image not found"
+            }
+          }
+        }
+      },
+      "/employee/services/images/{imageId}/default": {
+        "put": {
+          "summary": "Set image as default for service",
+          "tags": [
+            "Services"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "imageId",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Default image set successfully"
             }
           }
         }
@@ -6761,6 +10624,11 @@ window.onload = function() {
                       "type": "integer",
                       "minimum": 1,
                       "description": "Quantity of service consumed"
+                    },
+                    "note": {
+                      "type": "string",
+                      "maxLength": 500,
+                      "description": "Optional note for service usage"
                     }
                   },
                   "example": {
@@ -6907,6 +10775,193 @@ window.onload = function() {
           }
         }
       },
+      "/employee/service/penalty": {
+        "post": {
+          "summary": "Create a penalty charge",
+          "description": "Apply a penalty charge with custom price to a booking or guest",
+          "tags": [
+            "Employee Services"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "customPrice",
+                    "reason"
+                  ],
+                  "properties": {
+                    "bookingId": {
+                      "type": "string",
+                      "description": "Optional booking ID"
+                    },
+                    "bookingRoomId": {
+                      "type": "string",
+                      "description": "Optional booking room ID"
+                    },
+                    "customPrice": {
+                      "type": "number",
+                      "description": "Custom penalty amount",
+                      "example": 100000
+                    },
+                    "quantity": {
+                      "type": "integer",
+                      "default": 1,
+                      "description": "Number of penalty units"
+                    },
+                    "reason": {
+                      "type": "string",
+                      "minLength": 3,
+                      "maxLength": 500,
+                      "description": "Reason for penalty",
+                      "example": "Hư hỏng tài sản phòng"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "Penalty created successfully"
+            },
+            "400": {
+              "description": "Invalid input"
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "404": {
+              "description": "Booking or room not found"
+            }
+          }
+        }
+      },
+      "/employee/service/surcharge": {
+        "post": {
+          "summary": "Create a surcharge fee",
+          "description": "Apply a surcharge fee with custom price to a booking or guest",
+          "tags": [
+            "Employee Services"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "customPrice",
+                    "reason"
+                  ],
+                  "properties": {
+                    "bookingId": {
+                      "type": "string",
+                      "description": "Optional booking ID"
+                    },
+                    "bookingRoomId": {
+                      "type": "string",
+                      "description": "Optional booking room ID"
+                    },
+                    "customPrice": {
+                      "type": "number",
+                      "description": "Custom surcharge amount",
+                      "example": 50000
+                    },
+                    "quantity": {
+                      "type": "integer",
+                      "default": 1,
+                      "description": "Number of surcharge units"
+                    },
+                    "reason": {
+                      "type": "string",
+                      "minLength": 3,
+                      "maxLength": 500,
+                      "description": "Reason for surcharge",
+                      "example": "Phụ thu giờ cao điểm"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "Surcharge created successfully"
+            },
+            "400": {
+              "description": "Invalid input"
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "404": {
+              "description": "Booking or room not found"
+            }
+          }
+        }
+      },
+      "/health": {
+        "get": {
+          "summary": "Health check endpoint",
+          "description": "Returns the current health status of the API server",
+          "tags": [
+            "Health"
+          ],
+          "responses": {
+            "200": {
+              "description": "API is healthy and running",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "status": {
+                        "type": "string",
+                        "example": "ok",
+                        "description": "Health status of the API"
+                      },
+                      "timestamp": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2026-01-10T03:14:05.575Z",
+                        "description": "Current server timestamp"
+                      },
+                      "uptime": {
+                        "type": "number",
+                        "example": 588.595360349,
+                        "description": "Server uptime in seconds"
+                      },
+                      "environment": {
+                        "type": "string",
+                        "example": "development",
+                        "enum": [
+                          "development",
+                          "production",
+                          "test"
+                        ],
+                        "description": "Current environment"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "/employee/calendar-events": {
         "post": {
           "summary": "Create a new calendar event",
@@ -6930,14 +10985,6 @@ window.onload = function() {
                     },
                     "description": {
                       "type": "string"
-                    },
-                    "type": {
-                      "type": "string",
-                      "enum": [
-                        "HOLIDAY",
-                        "SEASONAL",
-                        "SPECIAL_EVENT"
-                      ]
                     },
                     "startDate": {
                       "type": "string",
@@ -6964,18 +11011,6 @@ window.onload = function() {
             "Employee - Calendar Events"
           ],
           "parameters": [
-            {
-              "in": "query",
-              "name": "type",
-              "schema": {
-                "type": "string",
-                "enum": [
-                  "HOLIDAY",
-                  "SEASONAL",
-                  "SPECIAL_EVENT"
-                ]
-              }
-            },
             {
               "in": "query",
               "name": "startDate",
@@ -7077,211 +11112,6 @@ window.onload = function() {
             }
           }
         }
-      },
-      "/employee/pricing-rules": {
-        "post": {
-          "summary": "Create a new pricing rule",
-          "tags": [
-            "Employee - Pricing Rules"
-          ],
-          "requestBody": {
-            "required": true,
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "name",
-                    "adjustmentType",
-                    "adjustmentValue"
-                  ],
-                  "properties": {
-                    "name": {
-                      "type": "string"
-                    },
-                    "roomTypeIds": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    },
-                    "calendarEventId": {
-                      "type": "string"
-                    },
-                    "startDate": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "endDate": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "recurrenceRule": {
-                      "type": "string"
-                    },
-                    "adjustmentType": {
-                      "type": "string",
-                      "enum": [
-                        "PERCENTAGE",
-                        "FIXED_AMOUNT"
-                      ]
-                    },
-                    "adjustmentValue": {
-                      "type": "number"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "responses": {
-            "201": {
-              "description": "Pricing rule created successfully"
-            }
-          }
-        },
-        "get": {
-          "summary": "Get all pricing rules",
-          "tags": [
-            "Employee - Pricing Rules"
-          ],
-          "parameters": [
-            {
-              "in": "query",
-              "name": "includeInactive",
-              "schema": {
-                "type": "boolean"
-              },
-              "description": "Include inactive rules"
-            }
-          ],
-          "responses": {
-            "200": {
-              "description": "List of pricing rules"
-            }
-          }
-        }
-      },
-      "/employee/pricing-rules/{id}": {
-        "get": {
-          "summary": "Get a pricing rule by ID",
-          "tags": [
-            "Employee - Pricing Rules"
-          ],
-          "parameters": [
-            {
-              "in": "path",
-              "name": "id",
-              "required": true,
-              "schema": {
-                "type": "string"
-              }
-            }
-          ],
-          "responses": {
-            "200": {
-              "description": "Pricing rule details"
-            },
-            "404": {
-              "description": "Pricing rule not found"
-            }
-          }
-        },
-        "put": {
-          "summary": "Update a pricing rule",
-          "tags": [
-            "Employee - Pricing Rules"
-          ],
-          "parameters": [
-            {
-              "in": "path",
-              "name": "id",
-              "required": true,
-              "schema": {
-                "type": "string"
-              }
-            }
-          ],
-          "requestBody": {
-            "required": true,
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "responses": {
-            "200": {
-              "description": "Pricing rule updated successfully"
-            }
-          }
-        },
-        "delete": {
-          "summary": "Delete a pricing rule (soft delete)",
-          "tags": [
-            "Employee - Pricing Rules"
-          ],
-          "parameters": [
-            {
-              "in": "path",
-              "name": "id",
-              "required": true,
-              "schema": {
-                "type": "string"
-              }
-            }
-          ],
-          "responses": {
-            "200": {
-              "description": "Pricing rule deleted successfully"
-            }
-          }
-        }
-      },
-      "/employee/pricing-rules/{id}/reorder": {
-        "post": {
-          "summary": "Reorder a pricing rule",
-          "tags": [
-            "Employee - Pricing Rules"
-          ],
-          "parameters": [
-            {
-              "in": "path",
-              "name": "id",
-              "required": true,
-              "schema": {
-                "type": "string"
-              }
-            }
-          ],
-          "requestBody": {
-            "required": true,
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "prevRank": {
-                      "type": "string",
-                      "nullable": true
-                    },
-                    "nextRank": {
-                      "type": "string",
-                      "nullable": true
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "responses": {
-            "200": {
-              "description": "Pricing rule reordered successfully"
-            }
-          }
-        }
       }
     },
     "tags": [
@@ -7292,6 +11122,10 @@ window.onload = function() {
       {
         "name": "Customer Bookings",
         "description": "Customer booking management endpoints"
+      },
+      {
+        "name": "Customer Images",
+        "description": "Customer endpoints for viewing room and room type images"
       },
       {
         "name": "Customer Profile",
@@ -7307,7 +11141,7 @@ window.onload = function() {
       },
       {
         "name": "Customer Services",
-        "description": "Customer service usage management endpoints (DEPRECATED - Employee only)"
+        "description": "Customer service usage endpoints (DEPRECATED - Employee only operations)"
       },
       {
         "name": "Employee Activities",
@@ -7326,6 +11160,10 @@ window.onload = function() {
         "description": "Employee booking management endpoints"
       },
       {
+        "name": "Employee Customer Rank",
+        "description": "Customer rank management endpoints for employees"
+      },
+      {
         "name": "Customer Management",
         "description": "Customer management endpoints for employees"
       },
@@ -7334,12 +11172,28 @@ window.onload = function() {
         "description": "Employee management endpoints for administrators"
       },
       {
+        "name": "Permissions",
+        "description": "Permission management endpoints"
+      },
+      {
+        "name": "Employee Pricing Rules",
+        "description": "Employee pricing rule management endpoints"
+      },
+      {
         "name": "Employee Profile",
         "description": "Employee profile management endpoints"
       },
       {
         "name": "Employee Promotions",
         "description": "Employee promotion management endpoints"
+      },
+      {
+        "name": "Employee Reports",
+        "description": "Hotel management reports for employees"
+      },
+      {
+        "name": "Roles",
+        "description": "Role management endpoints"
       },
       {
         "name": "Rooms",

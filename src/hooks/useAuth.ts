@@ -151,3 +151,63 @@ export function useResetPassword() {
       authService.resetPassword(token, password),
   });
 }
+
+/**
+ * Hook to manually refresh tokens
+ */
+export function useRefreshToken() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const refreshToken = await AsyncStorage.getItem("refreshToken");
+      if (!refreshToken) {
+        throw new Error("No refresh token available");
+      }
+      return authService.refreshTokens(refreshToken);
+    },
+    onSuccess: async (response: AuthResponse) => {
+      // Store new tokens
+      await AsyncStorage.setItem(
+        "accessToken",
+        response.data.tokens.access.token
+      );
+      await AsyncStorage.setItem(
+        "refreshToken",
+        response.data.tokens.refresh.token
+      );
+      // Invalidate profile query to refetch with new auth
+      queryClient.invalidateQueries({ queryKey: queryKeys.auth.profile() });
+    },
+    onError: async () => {
+      // Clear tokens on refresh failure
+      await AsyncStorage.removeItem("accessToken");
+      await AsyncStorage.removeItem("refreshToken");
+      await AsyncStorage.removeItem("userData");
+      queryClient.clear();
+    },
+  });
+}
+
+/**
+ * Hook to check authentication status on app start
+ * Returns the current auth state and provides a way to verify tokens
+ */
+export function useAuthCheck() {
+  return useQuery({
+    queryKey: ["auth", "check"],
+    queryFn: async () => {
+      const accessToken = await AsyncStorage.getItem("accessToken");
+      const refreshToken = await AsyncStorage.getItem("refreshToken");
+      const userDataStr = await AsyncStorage.getItem("userData");
+
+      if (!accessToken || !refreshToken) {
+        return { isAuthenticated: false, user: null };
+      }
+
+      const user = userDataStr ? JSON.parse(userDataStr) : null;
+      return { isAuthenticated: true, user };
+    },
+    staleTime: Infinity, // Don't refetch automatically
+  });
+}
