@@ -1,7 +1,7 @@
+import CloudinaryImage from "@/src/components/CloudinaryImage";
 import { useBookings } from "@/src/hooks/useBookings";
 import { Booking, BookingStatus } from "@/src/types/booking.types";
 import { format } from "date-fns";
-import { Image } from "expo-image";
 import { Stack, useRouter } from "expo-router";
 import { Calendar } from "lucide-react-native";
 import React, { useMemo, useState } from "react";
@@ -66,7 +66,21 @@ export default function MyBookingsScreen() {
 
     const roomType = firstRoom.roomType;
     const room = firstRoom.room;
+
+    // Image Priority:
+    // 1. Room Default Image
+    // 2. Room First Image
+    // 3. Room Type Default Image
+    // 4. Room Type First Image
+    // 5. Legacy/Fallback URL
+    const roomImage =
+      room?.images?.find((img) => img.isDefault) || room?.images?.[0];
+    const roomTypeImage =
+      roomType?.images?.find((img) => img.isDefault) || roomType?.images?.[0];
+
     const imageSource =
+      roomImage?.url ||
+      roomTypeImage?.url ||
       roomType?.imageUrl ||
       "https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=2070&auto=format&fit=crop";
 
@@ -107,11 +121,12 @@ export default function MyBookingsScreen() {
         <View style={styles.cardContent}>
           {/* Image Section */}
           <View style={styles.imageContainer}>
-            <Image
-              source={{ uri: imageSource }}
+            <CloudinaryImage
+              src={imageSource}
               style={styles.roomImage}
               contentFit="cover"
               transition={200}
+              width={200} // Optimization
             />
           </View>
 

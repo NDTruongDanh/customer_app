@@ -9,7 +9,7 @@
 ## Variables
 
 ```
-@baseUrl = http://localhost:3000/customer/v1
+@baseUrl = http://localhost:3000/customer-api/v1
 @token = YOUR_CUSTOMER_JWT_TOKEN_HERE
 ```
 
@@ -178,12 +178,87 @@ Authorization: Bearer {{token}}
 
 ---
 
+## 7. Get Customer Bookings with Images
+
+### Test bookings list with image data
+
+GET {{baseUrl}}/bookings
+Authorization: Bearer {{token}}
+
+### Expected Response:
+
+```json
+{
+  "data": [
+    {
+      "id": "booking-id",
+      "bookingCode": "BK123...",
+      "bookingRooms": [
+        {
+          "room": {
+            "images": [
+               {
+                 "url": "https://res.cloudinary.com/...",
+                 "thumbnailUrl": "https://res.cloudinary.com/...",
+                 "isDefault": true
+               }
+            ]
+          },
+          "roomType": {
+            "images": [...]
+          }
+        }
+      ]
+    }
+  ],
+  "pagination": {
+     "page": 1,
+     "limit": 10,
+     "total": 1
+  }
+}
+```
+
+---
+
+## 8. Get Single Booking with Images
+
+### Test single booking details
+
+GET {{baseUrl}}/bookings/{bookingId}
+Authorization: Bearer {{token}}
+
+### Replace {bookingId} with actual booking ID
+
+### Expected Response:
+
+```json
+{
+  "id": "booking-id",
+  "bookingCode": "BK123...",
+  "bookingRooms": [
+    {
+      "room": {
+        "images": [...]
+      },
+      "roomType": {
+        "images": [...]
+      }
+    }
+  ]
+}
+```
+
+---
+
 ## Testing Checklist
 
 ### Basic Functionality
 
 - [ ] GET /rooms/available returns images
 - [ ] GET /rooms/:roomId returns images
+- [ ] GET /bookings returns images in room and roomType
+- [ ] GET /bookings/:id returns images in room and roomType
 - [ ] GET /rooms/:roomId/images works
 - [ ] GET /room-types/:roomTypeId/images works
 - [ ] Images are ordered by sortOrder
@@ -245,6 +320,13 @@ curl -X GET "http://localhost:3000/customer-api/v1/rooms/ROOM_ID/images" \
 
 ```bash
 curl -X GET "http://localhost:3000/customer-api/v1/room-types/ROOM_TYPE_ID/images" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+### Get Bookings
+
+```bash
+curl -X GET "http://localhost:3000/customer-api/v1/bookings" \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 

@@ -4,11 +4,11 @@
  * Allows users to cancel pending bookings
  */
 
+import CloudinaryImage from "@/src/components/CloudinaryImage";
 import bookingService from "@/src/services/booking.service";
 import { Booking, BookingStatus } from "@/src/types/booking.types";
 import { showAlert } from "@/src/utils/alert";
 import { format } from "date-fns";
-import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   AlertCircle,
@@ -62,7 +62,21 @@ export default function BookingDetailScreen() {
   const firstRoom = booking.bookingRooms[0];
   const roomType = firstRoom?.roomType;
   const room = firstRoom?.room;
+
+  // Image Priority:
+  // 1. Room Default Image
+  // 2. Room First Image
+  // 3. Room Type Default Image
+  // 4. Room Type First Image
+  // 5. Legacy/Fallback URL
+  const roomImage =
+    room?.images?.find((img) => img.isDefault) || room?.images?.[0];
+  const roomTypeImage =
+    roomType?.images?.find((img) => img.isDefault) || roomType?.images?.[0];
+
   const imageSource =
+    roomImage?.url ||
+    roomTypeImage?.url ||
     roomType?.imageUrl ||
     "https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=2070&auto=format&fit=crop";
 
@@ -177,11 +191,12 @@ export default function BookingDetailScreen() {
         >
           {/* Room Image */}
           <View style={styles.imageContainer}>
-            <Image
-              source={{ uri: imageSource }}
+            <CloudinaryImage
+              src={imageSource}
               style={styles.roomImage}
               contentFit="cover"
               transition={200}
+              width={600} // Higher res for detail view
             />
             {/* Status Badge */}
             <View

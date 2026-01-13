@@ -3,6 +3,8 @@
  * Types for booking-related API requests and responses
  */
 
+import { RoomImage, RoomTypeImage } from "./room.types";
+
 export interface CreateBookingRequest {
   rooms: Array<{ roomId: string }>;
   checkInDate: string; // ISO 8601 format
@@ -45,7 +47,9 @@ export interface BookingRoomType {
   capacity: number;
   totalBed: number;
   basePrice: string;
+  // Deprecated: use images array instead
   imageUrl?: string | null;
+  images?: RoomTypeImage[];
 }
 
 export interface BookingRoomInfo {
@@ -54,6 +58,7 @@ export interface BookingRoomInfo {
   floor: number;
   code: string;
   status: string;
+  images?: RoomImage[];
 }
 
 export interface BookingRoom {
