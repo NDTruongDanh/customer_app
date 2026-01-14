@@ -202,7 +202,7 @@ export default function EditProfileScreen() {
           </View>
 
           {/* Email */}
-          <View style={styles.inputGroup}>
+          {/* <View style={styles.inputGroup}>
             <Text style={styles.label}>Email Address</Text>
             <TextInput
               style={styles.input}
@@ -214,7 +214,7 @@ export default function EditProfileScreen() {
               autoCapitalize="none"
               editable={!saving}
             />
-          </View>
+          </View> */}
 
           {/* ID Number */}
           <View style={styles.inputGroup}>

@@ -59,8 +59,12 @@ export default function LoginScreen() {
     loginMutation.mutate(
       { phone: result.data.phone, password: result.data.password },
       {
-        onSuccess: () => {
-          router.replace("/(tabs)/home");
+        onSuccess: (response) => {
+          if (response.data.customer.isEmailVerified) {
+            router.replace("/(tabs)/home");
+          } else {
+            router.replace("/verify-email");
+          }
         },
         onError: (error: unknown) => {
           console.error("Login error:", error);

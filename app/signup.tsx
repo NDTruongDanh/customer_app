@@ -94,7 +94,7 @@ export default function SignupScreen() {
 
     registerMutation.mutate(registerData, {
       onSuccess: () => {
-        router.replace("/(tabs)/home");
+        router.replace("/verify-email");
       },
       onError: (error: unknown) => {
         console.error("Signup error:", error);
