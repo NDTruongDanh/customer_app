@@ -1,4 +1,5 @@
 import CloudinaryImage from "@/src/components/CloudinaryImage";
+import { ErrorView } from "@/src/components/common";
 import { useBookings } from "@/src/hooks/useBookings";
 import { Booking, BookingStatus } from "@/src/types/booking.types";
 import { handleApiError } from "@/src/utils/errorHandler";

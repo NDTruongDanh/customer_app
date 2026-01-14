@@ -38,9 +38,8 @@ export default function BookingSummaryScreen() {
   const [isLoading, setIsLoading] = useState(false);
 
   const subtotal = getCartTotal();
-  const serviceFee = subtotal > 0 ? 50000 : 0; // 50000 VND service fee
   const tax = Math.round(subtotal * 0.1); // 10% tax
-  const total = subtotal + serviceFee + tax;
+  const total = subtotal + tax;
 
   const handleContinueToPayment = async () => {
     if (cartItems.length === 0) {
@@ -143,11 +142,21 @@ export default function BookingSummaryScreen() {
           {/* Room Cards */}
           {cartItems.map((item, index) => {
             // Get default or first image from room type
-            const defaultImage = item.room.roomType?.images?.find(
+            // Get image from room or room type (prioritize room-specific, then room type)
+            const roomDefaultImage = item.room.images?.find(
               (img) => img.isDefault
             );
-            const firstImage = item.room.roomType?.images?.[0];
-            const displayImage = defaultImage || firstImage;
+            const roomFirstImage = item.room.images?.[0];
+            const typeDefaultImage = item.room.roomType?.images?.find(
+              (img) => img.isDefault
+            );
+            const typeFirstImage = item.room.roomType?.images?.[0];
+
+            const displayImage =
+              roomDefaultImage ||
+              roomFirstImage ||
+              typeDefaultImage ||
+              typeFirstImage;
 
             return (
               <View key={item.id} style={styles.roomCard}>
@@ -288,14 +297,6 @@ export default function BookingSummaryScreen() {
               <Text style={styles.priceLabel}>Amount</Text>
               <Text style={styles.priceValue}>
                 {subtotal.toLocaleString("en-US")} VND
-              </Text>
-            </View>
-
-            {/* Service Fee */}
-            <View style={styles.priceRow}>
-              <Text style={styles.priceLabel}>Service Fee</Text>
-              <Text style={styles.priceValue}>
-                {serviceFee.toLocaleString("en-US")} VND
               </Text>
             </View>
 

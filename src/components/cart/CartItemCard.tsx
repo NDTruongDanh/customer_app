@@ -58,10 +58,14 @@ export default function CartItemCard({
     }
   };
 
-  // Get default or first image from room type
-  const defaultImage = room.roomType.images?.find((img) => img.isDefault);
-  const firstImage = room.roomType.images?.[0];
-  const displayImage = defaultImage || firstImage;
+  // Get image from room or room type (prioritize room-specific, then room type)
+  const roomDefaultImage = room.images?.find((img) => img.isDefault);
+  const roomFirstImage = room.images?.[0];
+  const typeDefaultImage = room.roomType.images?.find((img) => img.isDefault);
+  const typeFirstImage = room.roomType.images?.[0];
+
+  const displayImage =
+    roomDefaultImage || roomFirstImage || typeDefaultImage || typeFirstImage;
 
   return (
     <View style={styles.container}>

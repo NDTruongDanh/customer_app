@@ -24,8 +24,7 @@ export default function CartScreen() {
     useCart();
 
   const subtotal = getCartTotal();
-  const serviceFee = subtotal > 0 ? 50000 : 0; // 50000 VND service fee
-  const total = subtotal + serviceFee;
+  const total = subtotal;
 
   const handleRemoveItem = (itemId: string) => {
     removeFromCart(itemId);
@@ -120,14 +119,6 @@ export default function CartScreen() {
                   </Text>
                   <Text style={styles.summaryValue}>
                     {subtotal.toLocaleString("en-US")} VND
-                  </Text>
-                </View>
-
-                {/* Service Fee */}
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Service fee</Text>
-                  <Text style={styles.summaryValue}>
-                    {serviceFee.toLocaleString("en-US")} VND
                   </Text>
                 </View>
 
