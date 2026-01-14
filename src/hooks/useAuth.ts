@@ -211,3 +211,18 @@ export function useAuthCheck() {
     staleTime: Infinity, // Don't refetch automatically
   });
 }
+
+/**
+ * Hook for resending email verification
+ */
+export function useResendVerification() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => authService.resendVerification(),
+    onSuccess: () => {
+      // Invalidate profile query to potentially refetch updated verification status
+      queryClient.invalidateQueries({ queryKey: queryKeys.auth.profile() });
+    },
+  });
+}

@@ -1,5 +1,6 @@
 import { useProfile, useUpdateProfile } from "@/src/hooks";
 import type { Customer } from "@/src/types";
+import { handleApiError } from "@/src/utils/errorHandler";
 import { editProfileSchema, validateForm } from "@/src/utils/validation";
 import { useRouter } from "expo-router";
 import { ArrowLeft, Save } from "lucide-react-native";
@@ -115,11 +116,13 @@ export default function EditProfileScreen() {
       onSuccess: () => {
         router.back();
       },
-      onError: (error: any) => {
+      onError: (error: unknown) => {
         console.error("Error updating profile:", error);
-        const errorMessage =
-          error.response?.data?.message || "Failed to update profile";
-        Alert.alert("Error", errorMessage);
+        const errorInfo = handleApiError(
+          error,
+          "Failed to update profile. Please try again."
+        );
+        Alert.alert("Error", errorInfo.message);
       },
     });
   };

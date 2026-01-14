@@ -13,6 +13,7 @@ export const AUTH_ENDPOINTS = {
   REFRESH_TOKENS: "/customer/auth/refresh-tokens",
   FORGOT_PASSWORD: "/customer/auth/forgot-password",
   RESET_PASSWORD: "/customer/auth/reset-password",
+  RESEND_VERIFICATION: "/customer/auth/resend-verification",
 } as const;
 
 /**

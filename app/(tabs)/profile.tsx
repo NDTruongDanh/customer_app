@@ -1,5 +1,7 @@
-import { useLogout, useProfile } from "@/src/hooks";
+import { ErrorView } from "@/src/components/common";
+import { useLogout, useProfile, useResendVerification } from "@/src/hooks";
 import { showAlert, showConfirm } from "@/src/utils/alert";
+import { handleApiError } from "@/src/utils/errorHandler";
 import { useRouter } from "expo-router";
 import {
   CreditCard,
@@ -8,6 +10,7 @@ import {
   LogOut,
   Mail,
   Phone,
+  RefreshCw,
   User as UserIcon,
 } from "lucide-react-native";
 import {
@@ -28,14 +31,23 @@ export default function ProfileScreen() {
   const {
     data: profileResponse,
     isLoading: loading,
+    error: profileError,
     refetch,
     isRefetching: refreshing,
   } = useProfile();
 
   const profile = profileResponse?.data ?? null;
 
+  // Format error message
+  const errorInfo = profileError
+    ? handleApiError(profileError, "Failed to load profile. Please try again.")
+    : null;
+
   // Use TanStack Query for logout
   const logoutMutation = useLogout();
+
+  // Use TanStack Query for resend verification
+  const resendVerificationMutation = useResendVerification();
 
   const onRefresh = () => {
     refetch();
@@ -68,6 +80,17 @@ export default function ProfileScreen() {
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#007ef2" />
       </View>
+    );
+  }
+
+  if (errorInfo) {
+    return (
+      <ErrorView
+        message={errorInfo.message}
+        isNetworkError={errorInfo.isNetworkError}
+        onRetry={() => refetch()}
+        isRetrying={refreshing}
+      />
     );
   }
 
@@ -159,6 +182,40 @@ export default function ProfileScreen() {
                   <Text style={styles.infoValue}>
                     {profile?.email || "N/A"}
                   </Text>
+                  {!profile?.isEmailVerified && (
+                    <TouchableOpacity
+                      style={styles.resendButton}
+                      onPress={async () => {
+                        resendVerificationMutation.mutate(undefined, {
+                          onSuccess: () => {
+                            showAlert(
+                              "Success",
+                              "Verification email has been sent. Please check your inbox."
+                            );
+                          },
+                          onError: (error: unknown) => {
+                            const errorInfo = handleApiError(
+                              error,
+                              "Failed to send verification email. Please try again."
+                            );
+                            showAlert("Error", errorInfo.message);
+                          },
+                        });
+                      }}
+                      disabled={resendVerificationMutation.isPending}
+                    >
+                      {resendVerificationMutation.isPending ? (
+                        <ActivityIndicator size="small" color="#007ef2" />
+                      ) : (
+                        <>
+                          <RefreshCw size={14} color="#007ef2" />
+                          <Text style={styles.resendButtonText}>
+                            Resend Verification Email
+                          </Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
 
@@ -478,5 +535,21 @@ const styles = StyleSheet.create({
   },
   unverifiedText: {
     color: "#FF9800",
+  },
+  resendButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(0, 126, 242, 0.08)",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginTop: 8,
+    gap: 6,
+  },
+  resendButtonText: {
+    fontSize: 13,
+    fontFamily: "Roboto_500Medium",
+    color: "#007ef2",
   },
 });

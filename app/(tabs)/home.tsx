@@ -1,3 +1,4 @@
+import { ErrorView } from "@/src/components/common";
 import BusinessCard from "@/src/components/home/BusinessCard";
 import DateGuestSelector from "@/src/components/home/DateGuestSelector";
 import DateRangePicker from "@/src/components/home/DateRangePicker";
@@ -9,6 +10,7 @@ import FilterModal, {
 import RoomCard from "@/src/components/home/RoomCard";
 import SearchBar from "@/src/components/home/SearchBar";
 import { useRooms } from "@/src/hooks";
+import { handleApiError } from "@/src/utils/errorHandler";
 import { useRouter } from "expo-router";
 import { Bell } from "lucide-react-native";
 import { useEffect, useMemo, useState } from "react";
@@ -126,12 +128,9 @@ export default function HomeScreen() {
   // Format error message
   const roomsError = useMemo(() => {
     if (!roomsQueryError) return null;
-    const error = roomsQueryError as any;
-    if (error.response?.status === 401 || error.response?.data?.code === 401) {
-      return "Please login to view available rooms.";
-    }
-    return (
-      error.response?.data?.message || "Failed to load rooms. Please try again."
+    return handleApiError(
+      roomsQueryError,
+      "Failed to load rooms. Please try again."
     );
   }, [roomsQueryError]);
 
@@ -251,15 +250,12 @@ export default function HomeScreen() {
             <ActivityIndicator size="large" color="#007ef2" />
           </View>
         ) : roomsError ? (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{roomsError}</Text>
-            <TouchableOpacity
-              onPress={() => refetchRooms()}
-              style={styles.retryButton}
-            >
-              <Text style={styles.retryText}>Retry</Text>
-            </TouchableOpacity>
-          </View>
+          <ErrorView
+            message={roomsError.message}
+            isNetworkError={roomsError.isNetworkError}
+            onRetry={() => refetchRooms()}
+            fullScreen={false}
+          />
         ) : totalRooms === 0 ? (
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>No rooms available</Text>

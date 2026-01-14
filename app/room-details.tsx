@@ -1,8 +1,10 @@
 import { CloudinaryImage } from "@/src/components/CloudinaryImage";
+import { ErrorView } from "@/src/components/common";
 import { useCart } from "@/src/context/CartContext";
 import { useRoomDetails } from "@/src/hooks";
 import type { RoomImage, RoomTypeImage } from "@/src/types";
 import { showAlert } from "@/src/utils/alert";
+import { handleApiError } from "@/src/utils/errorHandler";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   ArrowLeft,
@@ -46,10 +48,9 @@ export default function RoomDetailsScreen() {
   const room = roomResponse?.data ?? null;
 
   // Format error message
-  const error = useMemo(() => {
+  const errorInfo = useMemo(() => {
     if (!roomError) return null;
-    const err = roomError as any;
-    return err.response?.data?.message || "Failed to load room details";
+    return handleApiError(roomError, "Failed to load room details");
   }, [roomError]);
 
   const [isFavorite, setIsFavorite] = useState(false);
@@ -114,14 +115,13 @@ export default function RoomDetailsScreen() {
     );
   }
 
-  if (error || !room) {
+  if (errorInfo || !room) {
     return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>{error || "Room not found"}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={() => refetch()}>
-          <Text style={styles.retryButtonText}>Retry</Text>
-        </TouchableOpacity>
-      </View>
+      <ErrorView
+        message={errorInfo?.message || "Room not found"}
+        isNetworkError={errorInfo?.isNetworkError || false}
+        onRetry={() => refetch()}
+      />
     );
   }
 

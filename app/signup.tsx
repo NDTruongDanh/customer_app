@@ -1,6 +1,7 @@
 import { useRegister } from "@/src/hooks";
 import type { RegisterData } from "@/src/types";
 import { showAlert } from "@/src/utils/alert";
+import { handleApiError } from "@/src/utils/errorHandler";
 import { signupSchema, validateForm } from "@/src/utils/validation";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -95,20 +96,13 @@ export default function SignupScreen() {
       onSuccess: () => {
         router.replace("/(tabs)/home");
       },
-      onError: (error: any) => {
+      onError: (error: unknown) => {
         console.error("Signup error:", error);
-
-        // Handle validation errors
-        if (error.response?.data?.errors) {
-          const validationErrors = error.response.data.errors
-            .map((e: any) => `${e.field}: ${e.message}`)
-            .join("\n");
-          showAlert("Validation Error", validationErrors);
-        } else {
-          const errorMessage =
-            error.response?.data?.message || "Signup failed. Please try again.";
-          showAlert("Signup Failed", errorMessage);
-        }
+        const errorInfo = handleApiError(
+          error,
+          "Signup failed. Please try again."
+        );
+        showAlert("Signup Failed", errorInfo.message);
       },
     });
   };

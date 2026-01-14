@@ -113,6 +113,13 @@ export interface UpdateProfileData {
 }
 
 /**
+ * Resend verification email response
+ */
+export interface ResendVerificationResponse {
+  message: string;
+}
+
+/**
  * API Error response structure
  */
 export interface ApiError {

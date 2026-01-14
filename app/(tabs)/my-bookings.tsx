@@ -1,6 +1,7 @@
 import CloudinaryImage from "@/src/components/CloudinaryImage";
 import { useBookings } from "@/src/hooks/useBookings";
 import { Booking, BookingStatus } from "@/src/types/booking.types";
+import { handleApiError } from "@/src/utils/errorHandler";
 import { format } from "date-fns";
 import { Stack, useRouter } from "expo-router";
 import { Calendar } from "lucide-react-native";
@@ -43,10 +44,25 @@ export default function MyBookingsScreen() {
     }
   }, [selectedTab]);
 
-  const { data, isLoading, refetch, isRefetching } = useBookings({
+  const {
+    data,
+    isLoading,
+    error: bookingsError,
+    refetch,
+    isRefetching,
+  } = useBookings({
     status: apiStatus as BookingStatus | undefined,
     limit: 50, // Fetch more items
   });
+
+  // Format error message
+  const errorInfo = useMemo(() => {
+    if (!bookingsError) return null;
+    return handleApiError(
+      bookingsError,
+      "Failed to load bookings. Please try again."
+    );
+  }, [bookingsError]);
 
   const bookings = data?.data?.data || [];
 
@@ -197,6 +213,13 @@ export default function MyBookingsScreen() {
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color="#007ef2" />
         </View>
+      ) : errorInfo ? (
+        <ErrorView
+          message={errorInfo.message}
+          isNetworkError={errorInfo.isNetworkError}
+          onRetry={() => refetch()}
+          isRetrying={isRefetching}
+        />
       ) : (
         <FlatList
           data={bookings}

@@ -9,6 +9,7 @@ import { useRoomDetails } from "@/src/hooks/useRooms";
 import bookingService from "@/src/services/booking.service";
 import { Booking, BookingStatus } from "@/src/types/booking.types";
 import { showAlert } from "@/src/utils/alert";
+import { handleApiError } from "@/src/utils/errorHandler";
 import { format } from "date-fns";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
@@ -118,13 +119,13 @@ export default function BookingDetailScreen() {
       );
       // Navigate back to bookings list
       router.back();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Cancel booking error:", error);
-      const errorMessage =
-        error.response?.data?.message ||
-        error.message ||
-        "Failed to cancel booking. Please try again.";
-      showAlert("Error", errorMessage);
+      const errorInfo = handleApiError(
+        error,
+        "Failed to cancel booking. Please try again."
+      );
+      showAlert("Error", errorInfo.message);
     } finally {
       setIsCancelling(false);
     }

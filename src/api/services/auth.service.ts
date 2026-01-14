@@ -136,6 +136,19 @@ export const authService = {
     );
     return response.data;
   },
+
+  /**
+   * Resend email verification
+   * POST /customer/auth/resend-verification
+   *
+   * @returns Promise with success message
+   */
+  resendVerification: async (): Promise<ResendVerificationResponse> => {
+    const response = await apiClient.post<ResendVerificationResponse>(
+      "/customer/auth/resend-verification"
+    );
+    return response.data;
+  },
 };
 
 export default authService;

@@ -7,6 +7,7 @@ import { CloudinaryImage } from "@/src/components/CloudinaryImage";
 import { useCart } from "@/src/context/CartContext";
 import bookingService from "@/src/services/booking.service";
 import type { CreateBookingRequest } from "@/src/types/booking.types";
+import { handleApiError } from "@/src/utils/errorHandler";
 import { useRouter } from "expo-router";
 import { ArrowLeft, Minus, Plus } from "lucide-react-native";
 import { useState } from "react";
@@ -90,18 +91,15 @@ export default function BookingSummaryScreen() {
 
       // Navigate to my bookings to see the newly created booking
       router.push("/(tabs)/my-bookings");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Booking error:", error);
-      console.error("Error response:", error.response?.data);
-      console.error("Error status:", error.response?.status);
 
-      const errorMessage =
-        error.response?.data?.message ||
-        error.response?.data?.error ||
-        error.message ||
-        "Unable to create booking. Please try again.";
+      const errorInfo = handleApiError(
+        error,
+        "Unable to create booking. Please try again."
+      );
 
-      Alert.alert("Booking Failed", errorMessage);
+      Alert.alert("Booking Failed", errorInfo.message);
     } finally {
       setIsLoading(false);
     }

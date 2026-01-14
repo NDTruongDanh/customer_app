@@ -1,5 +1,6 @@
 import { useLogin } from "@/src/hooks";
 import { showAlert } from "@/src/utils/alert";
+import { handleApiError } from "@/src/utils/errorHandler";
 import { loginSchema, validateForm } from "@/src/utils/validation";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -61,12 +62,13 @@ export default function LoginScreen() {
         onSuccess: () => {
           router.replace("/(tabs)/home");
         },
-        onError: (error: any) => {
+        onError: (error: unknown) => {
           console.error("Login error:", error);
-          const errorMessage =
-            error.response?.data?.message ||
-            "Login failed. Please check your credentials.";
-          showAlert("Login Failed", errorMessage);
+          const errorInfo = handleApiError(
+            error,
+            "Login failed. Please check your credentials."
+          );
+          showAlert("Login Failed", errorInfo.message);
         },
       }
     );
