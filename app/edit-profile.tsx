@@ -89,7 +89,6 @@ export default function EditProfileScreen() {
     // Prepare data (only include non-empty values)
     const formData = {
       fullName: fullName.trim() || undefined,
-      email: email.trim() || undefined,
       idNumber: idNumber.trim() || undefined,
       address: address.trim() || undefined,
     };
