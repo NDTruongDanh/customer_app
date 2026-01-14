@@ -1,4 +1,4 @@
-import { Bed, Heart, Minus, Plus, Users } from "lucide-react-native";
+import { Bed, Minus, Plus, Users } from "lucide-react-native";
 import { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import type { Room } from "../../types";
@@ -62,7 +62,7 @@ export default function RoomCard({
         </View>
 
         {/* Badges Row */}
-        <View style={styles.badgesRow}>
+        {/* <View style={styles.badgesRow}>
           <View
             style={[
               styles.statusBadge,
@@ -77,7 +77,7 @@ export default function RoomCard({
           >
             <Heart size={14} color="#007ef2" />
           </TouchableOpacity>
-        </View>
+        </View> */}
 
         {/* Room Number (Primary Header) */}
         <Text style={styles.roomNumber}>Room {roomNumber}</Text>
