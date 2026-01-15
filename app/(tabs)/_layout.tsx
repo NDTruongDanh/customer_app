@@ -1,6 +1,12 @@
 import { useCart } from "@/src/context/CartContext";
 import { Tabs } from "expo-router";
-import { Calendar, Home, ShoppingCart, User } from "lucide-react-native";
+import {
+  Calendar,
+  Home,
+  MessageCircle,
+  ShoppingCart,
+  User,
+} from "lucide-react-native";
 import { StyleSheet, Text, View } from "react-native";
 
 export default function TabLayout() {
@@ -25,6 +31,13 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <Home size={20} color={color} fill={focused ? color : "none"} />
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="ai-chat"
+        options={{
+          title: "AI Chat",
+          tabBarIcon: ({ color }) => <MessageCircle size={20} color={color} />,
         }}
       />
       <Tabs.Screen
