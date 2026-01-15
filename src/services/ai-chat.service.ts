@@ -81,8 +81,20 @@ export async function streamAIChat(
           }
 
           try {
-            // The backend sends raw text for the chat content
-            const chunk = data;
+            // The backend sends content as a JSON string to preserve newlines
+            let chunk = data;
+            try {
+              if (data.startsWith('"')) {
+                chunk = JSON.parse(data);
+              }
+            } catch (jsonError) {
+              // If it's not valid JSON, treat as raw text (fallback)
+              console.warn(
+                "Failed to parse chunk as JSON, using raw",
+                jsonError
+              );
+            }
+
             fullText += chunk;
             options.onChunk(chunk);
           } catch (e) {

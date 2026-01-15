@@ -10,6 +10,7 @@ import { ArrowLeft, MessageCircle, Send, Trash2, X } from "lucide-react-native";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Animated,
   FlatList,
   Keyboard,
   KeyboardAvoidingView,
@@ -133,6 +134,52 @@ const markdownStyles = StyleSheet.create({
   },
 });
 
+// Animated Thinking Indicator
+const ThinkingIndicator = () => {
+  const [msgIndex, setMsgIndex] = useState(0);
+  const opacity = useRef(new Animated.Value(0.4)).current;
+
+  const messages = [
+    "Thinking...",
+    "Gathering relevant data...",
+    "Analyzing your request...",
+    "Formulating response...",
+    "Checking data integrity...",
+  ];
+
+  // Cycle through messages
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setMsgIndex((prev) => (prev + 1) % messages.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Pulse animation
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 0.4,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, [opacity]);
+
+  return (
+    <Animated.Text style={[styles.thinkingText, { opacity }]}>
+      {messages[msgIndex]}
+    </Animated.Text>
+  );
+};
+
 export default function AIChatScreen() {
   const router = useRouter();
   const { data: authData } = useAuthCheck();
@@ -181,8 +228,16 @@ export default function AIChatScreen() {
           <Text style={styles.userText}>{item.content}</Text>
         ) : (
           <View style={styles.markdownContainer}>
-            <Markdown style={markdownStyles}>{item.content || " "}</Markdown>
-            {item.isStreaming && <Text style={styles.cursor}>▊</Text>}
+            {!item.content && item.isStreaming ? (
+              <ThinkingIndicator />
+            ) : (
+              <>
+                <Markdown style={markdownStyles}>
+                  {item.content || " "}
+                </Markdown>
+                {item.isStreaming && <Text style={styles.cursor}>▊</Text>}
+              </>
+            )}
           </View>
         )}
       </View>
@@ -402,6 +457,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginLeft: 2,
     opacity: 0.8,
+  },
+  thinkingText: {
+    color: "#666",
+    fontSize: 15,
+    fontStyle: "italic",
   },
   emptyState: {
     alignItems: "center",
