@@ -4,7 +4,6 @@
  */
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { fetch as expoFetch } from "expo/fetch";
 import { API_BASE_URL } from "../constants/config";
 
 export interface StreamOptions {
@@ -27,7 +26,7 @@ async function getAuthToken(): Promise<string | null> {
 
 /**
  * Send a message to the AI chat and stream the response
- * Uses expo/fetch for proper streaming support in React Native
+ * Uses XMLHttpRequest for reliable streaming on React Native
  */
 export async function streamAIChat(
   messages: ChatMessagePayload[],
@@ -40,48 +39,87 @@ export async function streamAIChat(
     return;
   }
 
-  try {
-    const response = await expoFetch(`${API_BASE_URL}/customer/ai/chat`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ messages }),
-    });
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `${API_BASE_URL}/customer/ai/chat`);
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.message || `Request failed with status ${response.status}`
-      );
-    }
+    xhr.setRequestHeader("Content-Type", "application/json");
+    xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+    xhr.setRequestHeader("Accept", "text/event-stream");
+    xhr.setRequestHeader("Cache-Control", "no-cache");
 
-    // Handle streaming response
-    const reader = response.body?.getReader();
-    if (!reader) {
-      throw new Error("Response body is not readable");
-    }
-
-    const decoder = new TextDecoder("utf-8");
+    let lastIndex = 0;
     let fullText = "";
+    let buffer = "";
 
-    while (true) {
-      const { done, value } = await reader.read();
+    xhr.onprogress = () => {
+      // Get the new part of the response
+      const response = xhr.responseText;
+      const newContent = response.substring(lastIndex);
+      lastIndex = response.length;
 
-      if (done) {
-        options.onComplete(fullText);
-        break;
+      // Add to buffer
+      buffer += newContent;
+
+      // Process complete lines
+      const lines = buffer.split("\n");
+      // The last element is either empty (if ended with \n) or incomplete line
+      buffer = lines.pop() || "";
+
+      for (const line of lines) {
+        if (line.trim() === "") continue;
+
+        if (line.startsWith("data: ")) {
+          const data = line.slice(6);
+
+          if (data === "[DONE]") {
+            // End of stream
+            xhr.abort();
+            options.onComplete(fullText);
+            resolve();
+            return;
+          }
+
+          try {
+            // The backend sends raw text for the chat content
+            const chunk = data;
+            fullText += chunk;
+            options.onChunk(chunk);
+          } catch (e) {
+            console.warn("Error processing chunk:", e);
+          }
+        }
       }
+    };
 
-      // Decode the chunk and append to full text
-      const chunk = decoder.decode(value, { stream: true });
-      fullText += chunk;
-      options.onChunk(chunk);
-    }
-  } catch (error) {
-    options.onError(error instanceof Error ? error : new Error(String(error)));
-  }
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        // If we finished without seeing [DONE], treating as success
+        if (buffer.startsWith("data: ") && buffer.length > 6) {
+          // Try to process remaining buffer if it looks like data
+          const data = buffer.slice(6);
+          if (data !== "[DONE]") {
+            fullText += data;
+            options.onChunk(data);
+          }
+        }
+        options.onComplete(fullText);
+        resolve();
+      } else {
+        const error = new Error(`Request failed with status ${xhr.status}`);
+        options.onError(error);
+        reject(error);
+      }
+    };
+
+    xhr.onerror = () => {
+      const error = new Error("Network request failed");
+      options.onError(error);
+      reject(error);
+    };
+
+    xhr.send(JSON.stringify({ messages }));
+  });
 }
 
 /**
@@ -97,7 +135,7 @@ export async function sendAIChatMessage(
     throw new Error("Not authenticated. Please log in.");
   }
 
-  const response = await expoFetch(`${API_BASE_URL}/customer/ai/chat`, {
+  const response = await fetch(`${API_BASE_URL}/customer/ai/chat`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
