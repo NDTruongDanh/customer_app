@@ -25,7 +25,7 @@ window.onload = function() {
     },
     "servers": [
       {
-        "url": "https://room-master-dcdsfng4c7h7hwbg.eastasia-01.azurewebsites.net/v1",
+        "url": "http://10.63.111.16:8080/v1",
         "description": "Development server"
       }
     ],
@@ -141,6 +141,46 @@ window.onload = function() {
       }
     ],
     "paths": {
+      "/customer/app-settings/payment-qr-code": {
+        "get": {
+          "summary": "Get payment QR code",
+          "description": "Retrieve the payment QR code configuration",
+          "tags": [
+            "Customer App Settings"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Payment QR code retrieved successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "data": {
+                        "type": "object",
+                        "properties": {
+                          "base64": {
+                            "type": "string",
+                            "description": "Base64 encoded image of the QR code"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "description": "Unauthorized"
+            }
+          }
+        }
+      },
       "/customer/auth/register": {
         "post": {
           "summary": "Customer registration",
@@ -639,7 +679,7 @@ window.onload = function() {
       "/customer/bookings": {
         "post": {
           "summary": "Create a new booking",
-          "description": "Create a booking with automatic room allocation based on room type and count",
+          "description": "Create a booking with automatic room allocation.\nSupports both JSON and multipart/form-data (for optional payment image uploads).\n",
           "tags": [
             "Customer Bookings"
           ],
@@ -710,6 +750,51 @@ window.onload = function() {
                     "totalGuests": 4
                   }
                 }
+              },
+              "multipart/form-data": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "rooms",
+                    "checkInDate",
+                    "checkOutDate",
+                    "totalGuests"
+                  ],
+                  "properties": {
+                    "rooms": {
+                      "type": "string",
+                      "description": "JSON string of room array (e.g., '[{\"roomId\":\"room_1\"}]')"
+                    },
+                    "checkInDate": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "checkOutDate": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "totalGuests": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "paymentImages": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "binary"
+                      },
+                      "description": "Optional payment proof images"
+                    },
+                    "paymentMethod": {
+                      "type": "string",
+                      "description": "Payment method used (optional)"
+                    },
+                    "paymentDescription": {
+                      "type": "string",
+                      "description": "Notes about payment (optional)"
+                    }
+                  }
+                }
               }
             }
           },
@@ -736,6 +821,10 @@ window.onload = function() {
                           },
                           "totalAmount": {
                             "type": "number"
+                          },
+                          "paymentImagesCount": {
+                            "type": "integer",
+                            "description": "Number of payment images uploaded (if any)"
                           }
                         }
                       }
@@ -882,6 +971,275 @@ window.onload = function() {
             },
             "404": {
               "description": "Booking not found"
+            }
+          }
+        }
+      },
+      "/customer/bookings/{bookingId}/payment-images": {
+        "post": {
+          "summary": "Upload payment proof image",
+          "description": "Upload a payment proof image for your booking",
+          "tags": [
+            "Customer Bookings"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "bookingId",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "Booking ID"
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "multipart/form-data": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "image"
+                  ],
+                  "properties": {
+                    "image": {
+                      "type": "string",
+                      "format": "binary"
+                    },
+                    "paymentMethod": {
+                      "type": "string",
+                      "description": "Payment method used"
+                    },
+                    "description": {
+                      "type": "string",
+                      "description": "Notes about this payment"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "Image uploaded successfully"
+            },
+            "400": {
+              "description": "No file uploaded"
+            },
+            "401": {
+              "description": "Unauthorized"
+            }
+          }
+        },
+        "get": {
+          "summary": "Get payment images",
+          "description": "Get all payment proof images for your booking",
+          "tags": [
+            "Customer Bookings"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "bookingId",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "Booking ID"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "List of payment images"
+            }
+          }
+        }
+      },
+      "/customer/bookings/{bookingId}/payment-images/batch": {
+        "post": {
+          "summary": "Upload multiple payment proof images",
+          "description": "Upload multiple payment proof images for your booking",
+          "tags": [
+            "Customer Bookings"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "bookingId",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "Booking ID"
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "multipart/form-data": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "images"
+                  ],
+                  "properties": {
+                    "images": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "binary"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Images uploaded successfully"
+            },
+            "207": {
+              "description": "Partial success"
+            }
+          }
+        }
+      },
+      "/customer/bookings/payment-images/{imageId}": {
+        "delete": {
+          "summary": "Delete payment image",
+          "description": "Delete a payment proof image",
+          "tags": [
+            "Customer Bookings"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "imageId",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "Payment image ID"
+            }
+          ],
+          "responses": {
+            "204": {
+              "description": "Image deleted successfully"
+            },
+            "404": {
+              "description": "Image not found"
+            }
+          }
+        }
+      },
+      "/customer/bookings/payment-images/upload-signature": {
+        "get": {
+          "summary": "Get upload signature for direct upload",
+          "description": "Get Cloudinary upload signature for mobile apps",
+          "tags": [
+            "Customer Bookings"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Upload signature generated"
+            }
+          }
+        }
+      },
+      "/customer/bookings/{bookingId}/payment-images/direct-upload": {
+        "post": {
+          "summary": "Save direct upload metadata",
+          "description": "Save metadata after direct upload to Cloudinary (for mobile apps)",
+          "tags": [
+            "Customer Bookings"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "bookingId",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "Booking ID"
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "cloudinaryId",
+                    "url",
+                    "secureUrl"
+                  ],
+                  "properties": {
+                    "cloudinaryId": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    },
+                    "secureUrl": {
+                      "type": "string"
+                    },
+                    "width": {
+                      "type": "integer"
+                    },
+                    "height": {
+                      "type": "integer"
+                    },
+                    "format": {
+                      "type": "string"
+                    },
+                    "paymentMethod": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "Upload metadata saved"
             }
           }
         }
@@ -1140,11 +1498,6 @@ window.onload = function() {
                       "maxLength": 100,
                       "description": "Customer full name"
                     },
-                    "email": {
-                      "type": "string",
-                      "format": "email",
-                      "description": "Customer email"
-                    },
                     "idNumber": {
                       "type": "string",
                       "maxLength": 20,
@@ -1356,14 +1709,6 @@ window.onload = function() {
             },
             {
               "in": "query",
-              "name": "floor",
-              "schema": {
-                "type": "integer"
-              },
-              "description": "Filter by floor number"
-            },
-            {
-              "in": "query",
               "name": "roomTypeId",
               "schema": {
                 "type": "string"
@@ -1429,14 +1774,6 @@ window.onload = function() {
                 "type": "string"
               },
               "description": "Filter by room type ID"
-            },
-            {
-              "in": "query",
-              "name": "floor",
-              "schema": {
-                "type": "integer"
-              },
-              "description": "Filter by floor number"
             },
             {
               "in": "query",
@@ -3405,6 +3742,323 @@ window.onload = function() {
             },
             "409": {
               "description": "New room is not available for the remaining stay period"
+            }
+          }
+        }
+      },
+      "/employee/bookings/rooms/{bookingRoomId}/customers": {
+        "put": {
+          "summary": "Update customers for a booking room",
+          "description": "Replace the list of customers for a specific booking room",
+          "tags": [
+            "Employee Bookings"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "bookingRoomId",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "Booking room ID"
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "customerIds"
+                  ],
+                  "properties": {
+                    "customerIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "minItems": 1,
+                      "description": "List of customer IDs"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Customers updated successfully"
+            },
+            "400": {
+              "description": "Validation error"
+            },
+            "404": {
+              "description": "Booking room or customer not found"
+            }
+          }
+        }
+      },
+      "/employee/bookings/{bookingId}/payment-images": {
+        "post": {
+          "summary": "Upload payment proof image",
+          "description": "Upload a single payment proof image for a booking",
+          "tags": [
+            "Employee Bookings"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "bookingId",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "Booking ID"
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "multipart/form-data": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "image"
+                  ],
+                  "properties": {
+                    "image": {
+                      "type": "string",
+                      "format": "binary"
+                    },
+                    "paymentMethod": {
+                      "type": "string",
+                      "description": "Payment method (e.g., bank_transfer, cash, credit_card)"
+                    },
+                    "description": {
+                      "type": "string",
+                      "description": "Notes about this payment proof"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "Image uploaded successfully"
+            },
+            "400": {
+              "description": "No file uploaded or validation error"
+            }
+          }
+        },
+        "get": {
+          "summary": "Get all payment images for a booking",
+          "description": "Retrieve all payment proof images for a specific booking",
+          "tags": [
+            "Employee Bookings"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "bookingId",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "Booking ID"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "List of payment images"
+            }
+          }
+        }
+      },
+      "/employee/bookings/{bookingId}/payment-images/batch": {
+        "post": {
+          "summary": "Upload multiple payment proof images",
+          "description": "Upload multiple payment proof images for a booking",
+          "tags": [
+            "Employee Bookings"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "bookingId",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "Booking ID"
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "multipart/form-data": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "images"
+                  ],
+                  "properties": {
+                    "images": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "binary"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Images uploaded successfully"
+            },
+            "207": {
+              "description": "Partial success (some images failed)"
+            }
+          }
+        }
+      },
+      "/employee/bookings/payment-images/{imageId}": {
+        "delete": {
+          "summary": "Delete a payment image",
+          "description": "Delete a payment proof image from both Cloudinary and database",
+          "tags": [
+            "Employee Bookings"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "imageId",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "Payment image ID"
+            }
+          ],
+          "responses": {
+            "204": {
+              "description": "Image deleted successfully"
+            },
+            "404": {
+              "description": "Image not found"
+            }
+          }
+        }
+      },
+      "/employee/bookings/{bookingId}/payment-images/reorder": {
+        "put": {
+          "summary": "Reorder payment images",
+          "description": "Update the sort order of payment images",
+          "tags": [
+            "Employee Bookings"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "bookingId",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "Booking ID"
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "imageIds"
+                  ],
+                  "properties": {
+                    "imageIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Array of image IDs in desired order"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Images reordered successfully"
+            }
+          }
+        }
+      },
+      "/employee/bookings/payment-images/{imageId}/default": {
+        "put": {
+          "summary": "Set default payment image",
+          "description": "Set a payment image as the default for the booking",
+          "tags": [
+            "Employee Bookings"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "imageId",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "Payment image ID"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Default image set successfully"
             }
           }
         }
@@ -7084,14 +7738,6 @@ window.onload = function() {
             },
             {
               "in": "query",
-              "name": "floor",
-              "schema": {
-                "type": "integer"
-              },
-              "description": "Filter by floor number"
-            },
-            {
-              "in": "query",
               "name": "roomTypeId",
               "schema": {
                 "type": "string"
@@ -7126,7 +7772,6 @@ window.onload = function() {
                 "type": "string",
                 "enum": [
                   "roomNumber",
-                  "floor",
                   "status",
                   "createdAt",
                   "updatedAt"
@@ -7289,14 +7934,6 @@ window.onload = function() {
                 "type": "string"
               },
               "description": "Filter by room type ID"
-            },
-            {
-              "in": "query",
-              "name": "floor",
-              "schema": {
-                "type": "integer"
-              },
-              "description": "Filter by floor number"
             },
             {
               "in": "query",
@@ -8424,6 +9061,32 @@ window.onload = function() {
                                 "amenities": {
                                   "type": "object"
                                 },
+                                "images": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string"
+                                      },
+                                      "url": {
+                                        "type": "string"
+                                      },
+                                      "secureUrl": {
+                                        "type": "string"
+                                      },
+                                      "thumbnailUrl": {
+                                        "type": "string"
+                                      },
+                                      "isDefault": {
+                                        "type": "boolean"
+                                      },
+                                      "sortOrder": {
+                                        "type": "integer"
+                                      }
+                                    }
+                                  }
+                                },
                                 "createdAt": {
                                   "type": "string",
                                   "format": "date-time"
@@ -8523,6 +9186,32 @@ window.onload = function() {
                           },
                           "amenities": {
                             "type": "object"
+                          },
+                          "images": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "url": {
+                                  "type": "string"
+                                },
+                                "secureUrl": {
+                                  "type": "string"
+                                },
+                                "thumbnailUrl": {
+                                  "type": "string"
+                                },
+                                "isDefault": {
+                                  "type": "boolean"
+                                },
+                                "sortOrder": {
+                                  "type": "integer"
+                                }
+                              }
+                            }
                           },
                           "createdAt": {
                             "type": "string",
@@ -11115,6 +11804,10 @@ window.onload = function() {
       }
     },
     "tags": [
+      {
+        "name": "Customer App Settings",
+        "description": "App settings retrieval for customers"
+      },
       {
         "name": "Customer Auth",
         "description": "Customer authentication endpoints"

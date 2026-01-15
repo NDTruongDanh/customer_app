@@ -5,14 +5,9 @@
 
 import { CloudinaryImage } from "@/src/components/CloudinaryImage";
 import { useCart } from "@/src/context/CartContext";
-import bookingService from "@/src/services/booking.service";
-import type { CreateBookingRequest } from "@/src/types/booking.types";
-import { handleApiError } from "@/src/utils/errorHandler";
 import { useRouter } from "expo-router";
 import { ArrowLeft, Minus, Plus } from "lucide-react-native";
-import { useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   Platform,
   ScrollView,
@@ -34,14 +29,13 @@ const formatDate = (date: Date | null): string => {
 
 export default function BookingSummaryScreen() {
   const router = useRouter();
-  const { cartItems, getCartTotal, clearCart, updateCartItem } = useCart();
-  const [isLoading, setIsLoading] = useState(false);
+  const { cartItems, getCartTotal, updateCartItem } = useCart();
 
   const subtotal = getCartTotal();
   const tax = Math.round(subtotal * 0.1); // 10% tax
   const total = subtotal + tax;
 
-  const handleContinueToPayment = async () => {
+  const handleContinueToPayment = () => {
     if (cartItems.length === 0) {
       Alert.alert("Error", "Your cart is empty");
       return;
@@ -60,48 +54,8 @@ export default function BookingSummaryScreen() {
       return;
     }
 
-    setIsLoading(true);
-
-    try {
-      // Prepare the booking request
-      const bookingRequest: CreateBookingRequest = {
-        rooms: cartItems.map((item) => ({
-          roomId: item.room.id,
-        })),
-        checkInDate: cartItems[0].checkInDate!.toISOString(),
-        checkOutDate: cartItems[0].checkOutDate!.toISOString(),
-        totalGuests: cartItems.reduce(
-          (acc, item) => acc + item.numberOfGuests,
-          0
-        ),
-      };
-
-      // Log the request for debugging
-      console.log(
-        "Booking request payload:",
-        JSON.stringify(bookingRequest, null, 2)
-      );
-
-      // Call the booking API
-      const response = await bookingService.createBooking(bookingRequest);
-
-      // Success! Clear the cart and show success message
-      clearCart();
-
-      // Navigate to my bookings to see the newly created booking
-      router.push("/(tabs)/my-bookings");
-    } catch (error: unknown) {
-      console.error("Booking error:", error);
-
-      const errorInfo = handleApiError(
-        error,
-        "Unable to create booking. Please try again."
-      );
-
-      Alert.alert("Booking Failed", errorInfo.message);
-    } finally {
-      setIsLoading(false);
-    }
+    // Navigate to the payment screen for QR code display and image upload
+    router.push("/payment");
   };
 
   // Calculate total number of nights and guests
@@ -327,21 +281,10 @@ export default function BookingSummaryScreen() {
         {/* Bottom Button */}
         <View style={styles.bottomContainer}>
           <TouchableOpacity
-            style={[
-              styles.paymentButton,
-              isLoading && styles.paymentButtonDisabled,
-            ]}
+            style={styles.paymentButton}
             onPress={handleContinueToPayment}
-            disabled={isLoading}
           >
-            {isLoading ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="small" color="#fff" />
-                <Text style={styles.paymentButtonText}>Processing...</Text>
-              </View>
-            ) : (
-              <Text style={styles.paymentButtonText}>CONTINUE TO PAYMENT</Text>
-            )}
+            <Text style={styles.paymentButtonText}>CONTINUE TO PAYMENT</Text>
           </TouchableOpacity>
         </View>
       </View>

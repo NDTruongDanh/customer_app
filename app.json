@@ -43,6 +43,13 @@
             "backgroundColor": "#000000"
           }
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "This app needs access to your photos to upload payment proof images.",
+          "cameraPermission": "This app needs access to your camera to take photos of payment proof."
+        }
       ]
     ],
     "experiments": {
