@@ -3,6 +3,7 @@
  * Chat interface with streaming AI responses and Markdown rendering
  */
 
+import { RoomSuggestionCard } from "@/src/components/ai/RoomSuggestionCard";
 import { ChatMessage, useAIChat } from "@/src/hooks/useAIChat";
 import { useAuthCheck } from "@/src/hooks/useAuth";
 import { useRouter } from "expo-router";
@@ -180,6 +181,26 @@ const ThinkingIndicator = () => {
   );
 };
 
+const parseAIResponse = (content: string) => {
+  const ROOMS_TAG_START = ":::ROOMS_JSON_START:::";
+  const ROOMS_TAG_END = ":::ROOMS_JSON_END:::";
+
+  if (content && content.includes(ROOMS_TAG_START)) {
+    const parts = content.split(ROOMS_TAG_START);
+    const text = parts[0];
+    const jsonPart = parts[1].split(ROOMS_TAG_END)[0];
+    try {
+      const rooms = JSON.parse(jsonPart);
+      return { text, rooms };
+    } catch (e) {
+      // During streaming, JSON might be incomplete.
+      // Return just the text part to hide the raw tags/JSON from user
+      return { text: text, rooms: null };
+    }
+  }
+  return { text: content, rooms: null };
+};
+
 export default function AIChatScreen() {
   const router = useRouter();
   const { data: authData } = useAuthCheck();
@@ -216,28 +237,43 @@ export default function AIChatScreen() {
 
   const renderMessage = useCallback(({ item }: { item: ChatMessage }) => {
     const isUser = item.role === "user";
+    const { text, rooms } = isUser
+      ? { text: item.content, rooms: null }
+      : parseAIResponse(item.content || "");
 
     return (
       <View
         style={[
-          styles.messageBubble,
-          isUser ? styles.userBubble : styles.assistantBubble,
+          styles.messageWrapper,
+          isUser ? styles.userWrapper : styles.assistantWrapper,
         ]}
       >
-        {isUser ? (
-          <Text style={styles.userText}>{item.content}</Text>
-        ) : (
-          <View style={styles.markdownContainer}>
-            {!item.content && item.isStreaming ? (
-              <ThinkingIndicator />
-            ) : (
-              <>
-                <Markdown style={markdownStyles}>
-                  {item.content || " "}
-                </Markdown>
-                {item.isStreaming && <Text style={styles.cursor}>▊</Text>}
-              </>
-            )}
+        <View
+          style={[
+            styles.messageBubble,
+            isUser ? styles.userBubble : styles.assistantBubble,
+          ]}
+        >
+          {isUser ? (
+            <Text style={styles.userText}>{text}</Text>
+          ) : (
+            <View style={styles.markdownContainer}>
+              {!text && item.isStreaming ? (
+                <ThinkingIndicator />
+              ) : (
+                <View style={{ width: "100%" }}>
+                  <Markdown style={markdownStyles}>{text}</Markdown>
+                  {item.isStreaming && <Text style={styles.cursor}>▊</Text>}
+                </View>
+              )}
+            </View>
+          )}
+        </View>
+
+        {/* Render suggested rooms if available - Outside the bubble */}
+        {!isUser && rooms && rooms.length > 0 && (
+          <View style={styles.roomsContainer}>
+            <RoomSuggestionCard rooms={rooms} />
           </View>
         )}
       </View>
@@ -422,10 +458,22 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   messageBubble: {
-    maxWidth: "85%",
     padding: 12,
     borderRadius: 16,
+  },
+  messageWrapper: {
     marginBottom: 12,
+    width: "100%",
+  },
+  userWrapper: {
+    alignItems: "flex-end",
+  },
+  assistantWrapper: {
+    alignItems: "flex-start",
+  },
+  roomsContainer: {
+    marginTop: 8,
+    width: "100%",
   },
   userBubble: {
     alignSelf: "flex-end",

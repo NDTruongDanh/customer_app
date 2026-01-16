@@ -41,13 +41,26 @@ export function useAIChat(): UseAIChatReturn {
         const stored = await AsyncStorage.getItem(STORAGE_KEY);
         if (stored) {
           const parsed = JSON.parse(stored);
-          // Convert timestamp strings back to Date objects
-          const hydrated = parsed.map((msg: any) => ({
-            ...msg,
-            timestamp: new Date(msg.timestamp),
-          }));
-          setMessages(hydrated);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            // Convert timestamp strings back to Date objects
+            const hydrated = parsed.map((msg: any) => ({
+              ...msg,
+              timestamp: new Date(msg.timestamp),
+            }));
+            setMessages(hydrated);
+            return;
+          }
         }
+
+        // Seed with welcome message if no history or empty history
+        const welcomeMessage: ChatMessage = {
+          id: "welcome-message",
+          role: "assistant",
+          content:
+            "### Welcome to Room Master! 🏨\n\nI'm your **AI concierge**. I can help you with:\n\n* Checking room availability 🛏️\n* Finding the best deals 🏷️\n* Managing your bookings 📅\n\n**How can I help you today?**",
+          timestamp: new Date(),
+        };
+        setMessages([welcomeMessage]);
       } catch (e) {
         console.error("Failed to load chat history", e);
       } finally {
