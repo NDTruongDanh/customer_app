@@ -294,7 +294,7 @@ export default function AIChatScreen() {
           <Text style={styles.suggestionTitle}>Try asking:</Text>
           {[
             "What rooms are available this weekend?",
-            "Show me rooms with ocean view",
+            "Suggest me a room for a family of 4 people",
             "What promotions are available?",
           ].map((suggestion, index) => (
             <TouchableOpacity

@@ -28,6 +28,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { Calendar as RNCalendar, DateData } from "react-native-calendars";
+import { Modal } from "react-native";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -62,6 +64,33 @@ export default function RoomDetailsScreen() {
     params.checkOutDate ? new Date(params.checkOutDate as string) : null
   );
   const [numberOfGuests, setNumberOfGuests] = useState(1);
+
+  // Date Picker State
+  const [isDatePickerVisible, setDatePickerVisible] = useState(false);
+  const [pickingType, setPickingType] = useState<"checkIn" | "checkOut">(
+    "checkIn"
+  );
+
+  const openDatePicker = (type: "checkIn" | "checkOut") => {
+    setPickingType(type);
+    setDatePickerVisible(true);
+  };
+
+  const handleDateSelect = (date: DateData) => {
+    const selectedDate = new Date(date.dateString);
+    // Reset time to noon to avoid timezone issues affecting day comp
+    selectedDate.setHours(12, 0, 0, 0);
+
+    if (pickingType === "checkIn") {
+      setCheckInDate(selectedDate);
+      if (checkOutDate && selectedDate >= checkOutDate) {
+        setCheckOutDate(null); // Reset invalid checkout
+      }
+    } else {
+      setCheckOutDate(selectedDate);
+    }
+    setDatePickerVisible(false);
+  };
 
   const { addToCart, isInCart } = useCart();
   const roomInCart = room ? isInCart(room.id) : false;
@@ -187,7 +216,7 @@ export default function RoomDetailsScreen() {
             if (allImages.length === 0) {
               return (
                 <View style={styles.placeholderImage}>
-                  <Text style={styles.placeholderText}>
+                  <Text style={styles.placeholderImageText}>
                     No images available
                   </Text>
                 </View>
@@ -303,37 +332,62 @@ export default function RoomDetailsScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Booking Details</Text>
 
-            {/* Booking Dates Display */}
-            {checkInDate && checkOutDate && (
-              <View style={styles.datesDisplayContainer}>
-                <View style={styles.dateDisplayItem}>
-                  <Calendar size={16} color="#007ef2" />
-                  <View style={styles.dateDisplayText}>
-                    <Text style={styles.dateDisplayLabel}>Check-in</Text>
-                    <Text style={styles.dateDisplayValue}>
-                      {checkInDate.toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
-                    </Text>
-                  </View>
+            {/* Booking Dates Display - Always visible now with selection */}
+            <View style={styles.datesDisplayContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.dateDisplayItem,
+                  !checkInDate && styles.dateDisplayItemActive,
+                ]}
+                onPress={() => openDatePicker("checkIn")}
+              >
+                <Calendar size={16} color="#007ef2" />
+                <View style={styles.dateDisplayText}>
+                  <Text style={styles.dateDisplayLabel}>Check-in</Text>
+                  <Text
+                    style={[
+                      styles.dateDisplayValue,
+                      !checkInDate && styles.placeholderText,
+                    ]}
+                  >
+                    {checkInDate
+                      ? checkInDate.toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })
+                      : "Select Date"}
+                  </Text>
                 </View>
-                <View style={styles.dateDisplayItem}>
-                  <Calendar size={16} color="#007ef2" />
-                  <View style={styles.dateDisplayText}>
-                    <Text style={styles.dateDisplayLabel}>Check-out</Text>
-                    <Text style={styles.dateDisplayValue}>
-                      {checkOutDate.toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
-                    </Text>
-                  </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.dateDisplayItem,
+                  !checkOutDate && styles.dateDisplayItemActive,
+                ]}
+                onPress={() => openDatePicker("checkOut")}
+              >
+                <Calendar size={16} color="#007ef2" />
+                <View style={styles.dateDisplayText}>
+                  <Text style={styles.dateDisplayLabel}>Check-out</Text>
+                  <Text
+                    style={[
+                      styles.dateDisplayValue,
+                      !checkOutDate && styles.placeholderText,
+                    ]}
+                  >
+                    {checkOutDate
+                      ? checkOutDate.toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })
+                      : "Select Date"}
+                  </Text>
                 </View>
-              </View>
-            )}
+              </TouchableOpacity>
+            </View>
 
             {/* Guest Selection */}
             <View style={styles.guestSelectionContainer}>
@@ -443,6 +497,53 @@ export default function RoomDetailsScreen() {
           )}
         </View>
       )}
+
+      {/* Date Picker Modal */}
+      <Modal
+        visible={isDatePickerVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setDatePickerVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>
+              Select {pickingType === "checkIn" ? "Check-in" : "Check-out"} Date
+            </Text>
+            <RNCalendar
+              onDayPress={handleDateSelect}
+              markedDates={{
+                [checkInDate?.toISOString().split("T")[0] || ""]: {
+                  startingDay: true,
+                  color: "#007ef2",
+                  selected: true,
+                },
+                [checkOutDate?.toISOString().split("T")[0] || ""]: {
+                  endingDay: true,
+                  color: "#007ef2",
+                  selected: true,
+                },
+              }}
+              minDate={
+                pickingType === "checkOut" && checkInDate
+                  ? checkInDate.toISOString().split("T")[0]
+                  : new Date().toISOString().split("T")[0]
+              }
+              theme={{
+                todayTextColor: "#007ef2",
+                selectedDayBackgroundColor: "#007ef2",
+                arrowColor: "#007ef2",
+              }}
+            />
+            <TouchableOpacity
+              style={styles.closeModalButton}
+              onPress={() => setDatePickerVisible(false)}
+            >
+              <Text style={styles.closeModalButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -559,7 +660,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#d0d0d0",
     height: 290,
   },
-  placeholderText: {
+  placeholderImageText: {
     fontSize: 16,
     color: "#666",
   },
@@ -881,5 +982,44 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 14,
     fontWeight: "700",
+  },
+  dateDisplayItemActive: {
+    borderColor: "#007ef2",
+    backgroundColor: "#f0f9ff",
+  },
+  placeholderText: {
+    color: "#007ef2",
+    fontStyle: "italic",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 20,
+    width: "100%",
+    maxWidth: 350,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  closeModalButton: {
+    marginTop: 16,
+    padding: 12,
+    alignItems: "center",
+  },
+  closeModalButtonText: {
+    color: "#666",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   View,
   Text,
@@ -37,6 +37,12 @@ export function RoomSuggestionCard({ rooms }: RoomSuggestionCardProps) {
     return new Intl.NumberFormat("vi-VN").format(price);
   };
 
+  const uniqueRooms = useMemo(() => {
+    return rooms.filter(
+      (room, index, self) => index === self.findIndex((t) => t.id === room.id)
+    );
+  }, [rooms]);
+
   return (
     <View style={styles.container}>
       <Text style={styles.headerTitle}>Recommended for you ✨</Text>
@@ -47,7 +53,7 @@ export function RoomSuggestionCard({ rooms }: RoomSuggestionCardProps) {
         decelerationRate="fast"
         snapToInterval={CARD_WIDTH + 16}
       >
-        {rooms.map((room) => (
+        {uniqueRooms.map((room) => (
           <View key={room.id} style={styles.card}>
             <Image
               source={{
